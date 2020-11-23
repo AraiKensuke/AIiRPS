@@ -1,0 +1,134 @@
+#!/bin/bash
+
+export PYTHONPATH=${PYTHONPATH}:/Users/arai/DEV/sumojam
+_REL_ME=1
+_REL_AI=2
+_REL_OU=3
+_WTL=10
+_RPS=11
+
+#dat_fns=("20Jan09-1504-32" "20Aug18-1624-01" "20Aug18-1546-13" "20Aug18-1644-09" "20Aug18-1603-42")
+#dat_fns=("20Aug18-1644-09")
+dat_fns=("20Nov09-1113-44")
+dat_fns=("20Jan09-1504-32")
+#dat_fns=("20Oct04-0930-54")
+#dat_fns=("${dat_fns_ali[@]}") 
+#dat_fns_ken=("20Jan08-1703-13")
+
+# "20Aug12-1331-06" "20May29-1923-44")
+#dat_fns=("20Oct11-0030-03")
+#dat_fns=("20Oct11-0724-47")
+#dat_fns=("20Oct11-1553-36")
+#dat_fns=("20Apr11-2125-04")
+#dat_fns=("20Apr18-2148-58")
+#dat_fns=("20Apr10-2248-43")
+#dat_fns=("20Apr15-2034-12")
+#dat_fns=("20Apr15-2034-12")
+#dat_fns=("20Jan08-1703-13")
+#dat_fns=("20Apr24-1650-24")
+#dat_fns=("20Oct26-0136-29")
+#dat_fns=("20Oct26-0208-25")
+#
+#dat_fns=("20Aug18-1624-01" "20Aug12-1252-50" "20Aug18-1644-09" "20Jan08-1703-13" "20Jan09-1504-32" "20Apr24-1650-24")
+#dat_fns=("20Nov08-0904-26")
+#dat_fns=("22Jan01-0000-01")
+dat_fns=("20Nov09-1623-42")
+dat_fns=("20Nov09-1627-30")
+# dat_fns=("20Nov09-1634-17")
+# dat_fns=("20Nov09-1647-51")
+# dat_fns=("20Nov09-1652-59")
+# dat_fns=("20Nov09-1701-56")
+# dat_fns=("20Nov09-1708-32")
+# dat_fns=("20Nov09-1714-13")
+dat_fns=("20Nov09-1728-37")
+dat_fns=("20Nov09-2000-42")
+dat_fns=("20Nov09-2011-15")
+# dat_fns=("20Nov09-1750-02")
+# dat_fns=("20Nov09-1756-23")
+# dat_fns=("20Nov09-1801-22")
+# dat_fns=("20Nov09-1810-15")
+# dat_fns=("20Nov09-1826-22")
+# dat_fns=("20Nov09-1830-54")
+# dat_fns=("20Nov09-1835-20")
+dat_fns=("20Nov09-2017-40")
+dat_fns=("20Nov09-2020-37")
+dat_fns=("20Nov10-0519-06")
+dat_fns=("20Nov10-0525-06")
+dat_fns=("20Nov10-0533-07")
+dat_fns=("20Nov10-0537-37")
+dat_fns=("20Nov10-0543-02")
+dat_fns=("20Nov10-0547-10")
+dat_fns=("20Nov10-0647-19")
+dat_fns=("20Nov10-0657-11")
+dat_fns=("20Nov10-0709-33")
+dat_fns=("20Nov10-0741-43")
+dat_fns=("20Nov10-0802-30")
+dat_fns=("20Nov10-0916-21")
+dat_fns=("20Nov10-0958-25")
+dat_fns=("20Nov10-1011-30")
+dat_fns=("20Nov10-1235-20")
+
+
+
+
+
+#dat_fns=("20Nov08-0904-26")
+
+dat_fns=("20Nov11-0740-13")
+dat_fns=("20Nov11-0900-59")
+dat_fns=("20Aug18-1644-09")
+dat_fns=("20Aug12-1252-50")
+dat_fns=("20Apr24-1650-24")
+
+dat_fns=("20Aug18-1546-13")
+dat_fns=("20Jan08-1703-13")
+dat_fns=("20Aug18-1624-01")
+dat_fns=("20May29-1419-14" "20Jun01-0748-03" "20May29-1923-44")
+dat_fns=("20Aug12-1331-06")
+dat_fns=("20Jan09-1504-32")
+dat_fns=("20Nov22-1108-25")
+#dat_fns=("20Apr18-2148-58")
+#dat_fns=("20May04-2219-50")
+#dat_fns=("20Nov08-0904-26")
+
+#signals=(${_REL_ME} ${_REL_AI})
+
+signals=(${_REL_ME})
+covs=(${_WTL})
+label=2
+
+#B_q2s=(5.)
+
+dat_fns=("20Nov21-1959-30")
+
+#dat_fns=("20Nov21-2131-38")
+#dat_fns=("20Nov22-0025-50")
+dat_fns=("20Nov22-1243-38")
+dat_fns=("20Nov22-1243-40")
+dat_fns=("20Nov22-1407-18")
+#dat_fns=("20Nov22-1654-58")
+
+dat_fns=("20Nov22-1655-02")
+dat_fns=("20Nov22-1108-25")
+#dat_fns=("20Nov21-1959-30")
+# dat_fns=("20Nov21-1959-30")
+dat_fns=("20Nov21-1959-30" "20Nov21-2131-38" "20Nov22-1108-25")
+# dat_fns=("20Jan09-1504-32")
+# dat_fns=("20Jan08-1703-13")
+# dat_fns=("20May29-1419-14" "20Jun01-0748-03" "20May29-1923-44")
+#dat_fns=("20Nov22-1654-58" "20Nov22-1655-00" "20Nov22-1655-02")
+
+rndmz="False"
+tr0="0"
+tr1="-1" 
+know_gt="False"
+random_walk="False"
+
+
+for dat_fn in ${dat_fns[@]}; do
+    for signal in ${signals[@]}; do
+	for cov in ${covs[@]}; do
+    	    python janken_mult.py dat_fn=${dat_fn} label=${label} rndmz=${rndmz} tr0=${tr0} tr1=${tr1} signal=${signal} know_gt=${know_gt} covariates=${cov} random_walk=${random_walk}
+	done
+    done
+done
