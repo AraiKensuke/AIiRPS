@@ -6,7 +6,7 @@ import pyPG as lw
 import LOSTtmp.kfARlib1c as _kfar
 import pickle
 
-import read_taisen as _rd
+import AIiRPS.util.read_taisen as _rd
 import matplotlib.pyplot as _plt
 import os
 import sys
