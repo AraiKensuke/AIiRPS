@@ -2,4 +2,4 @@
 
 **Run demonstration in Colab**
 
-https://colab.research.google.com/github/AraiKensuke/blob/master/Launch.ipynb
+https://colab.research.google.com/github/AraiKensuke/master/Launch.ipynb
