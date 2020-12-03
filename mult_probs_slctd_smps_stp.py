@@ -13,7 +13,8 @@ import pyPG as lw
 import LOSTtmp.kfARlib1c as _kfar
 import pickle
 import rpsms
-
+from dir_util import getResultFN
+import empirical as _emp
 
 import read_taisen as _rt
 import matplotlib.pyplot as _plt
@@ -55,9 +56,9 @@ _R      = 0
 _P      = 1
 _S      = 2
 
-ITER = 30000
+ITER = 20000
 
-label=3
+label=5
 #  priors for inv gamma   #  B/(a+1)
 #a_q2 = 100
 a_q2 = 2.
@@ -70,8 +71,9 @@ a_q2 = 2.
 B_q2= 0.1
 #B_q2 = 30
 
+S    = 1
 rndmz = False
-
+show_emp = False
 know_gt  = False
 #signal   = _RELATIVE_LAST_ME
 #covariates = _WTL
@@ -90,7 +92,6 @@ dat_fns        = ["20Nov09-1113-44"]
 #
 #dat_fns       = ["22Jan01-0000-01"]
 #dat_fns       = ["20Aug18-1624-01", "20Aug12-1252-50", "20Aug18-1644-09", "20Jan08-1703-13", "20Jan09-1504-32", "20Apr24-1650-24"]
-#dat_fns       = ["20Apr24-1650-24"]
 #
 #dat_fns       = ["20Jan08-1703-13"]
 #dat_fns       = ["20Oct26-0120-42"]
@@ -159,19 +160,29 @@ dat_fns       = ["20Nov21-1921-05"]
 
 
 dat_fns       = ["20Nov22-0025-50"]
-
 dat_fns       = ["20Nov21-2131-38"]
 dat_fns       = ["20Nov21-1959-30"]
 dat_fns       = ["20Jan09-1504-32"]#, 
 dat_fns       = ["20Nov21-1921-05"]
 #dat_fns       = ["20May29-1419-14"]#, 
-#dat_fns       = ["20May29-1923-44"]
+
 #dat_fns       = ["20Jan09-1504-32"]
 dat_fns=["20Nov21-1959-30", "20Nov21-2131-38", "20Nov22-1108-25"]
 #dat_fns=["20May29-1419-14", "20Jun01-0748-03", "20May29-1923-44"]
-dat_fns       = ["20Apr24-1650-24"]
+
+
+
+dat_fns       = ["20Nov21-2131-38"]
+
+dat_fns=         ["20May29-1923-44"]
+dat_fns       = ["20Nov22-1108-25"]
+dat_fns       = ["20Nov21-1959-30"]
+#dat_fns       = ["20Jun01-0748-03"]
+#dat_fns       = ["20Apr24-1650-24"]
 #########################################
 
+win=20
+SHUF=0
 for dat_fn in dat_fns:
      print(dat_fn)
      sran = ""
@@ -181,14 +192,13 @@ for dat_fn in dat_fns:
          lmGT = depickle("simDAT/rpsm_%s.dmp" % dat_fn)
          Ts = lmGT["Ts_timeseries"]
 
-
+     emp_ngs, Tgame = _emp.empirical_NGS(dat_fn, win=win, SHUF=SHUF)
 
      #scov = "WTL" if covariates == _WTL else "RPS"
      #ssig = "ME"  if signal == _RELATIVE_LAST_ME else "AI"
 
      #print("%(dat)s,%(rel)s,%(cov)s%(ran)s.dmp" % {"dat" : dat_fn, "rel" : ssig, "cov" : scov, "ran" : sran})
-     #lm       = depickle("Results/%(rpsm)s/%(lb)d/%(fl)s%(rnd)s.dmp" % {"rpsm" : dat_fn, "fl" : fns[sig_cov], "lb" : label, "rnd" : sran})
-     lm       = depickle("/Users/arai/nctc/Workspace/AIiRPS_Results/%(rpsm)s/%(lb)d/%(fl)s%(rnd)s.dmp" % {"rpsm" : dat_fn, "fl" : fns[sig_cov], "lb" : label, "rnd" : sran})
+     lm       = depickle(getResultFN("%(rpsm)s/%(lb)d/%(fl)s%(rnd)s1.dmp" % {"rpsm" : dat_fn, "fl" : fns[sig_cov], "lb" : label, "rnd" : sran}))
      #lm = depickle("%(dat)s,%(rel)s,%(cov)s%(ran)s.dmp" % {"dat" : dat_fn, "rel" : ssig, "cov" : scov, "ran" : sran})
 
      y_vec   = lm["y_vec"]
@@ -198,26 +208,27 @@ for dat_fn in dat_fns:
      smp_offsets= lm["smp_offsets"]
      Tm1     = y_vec.shape[0] - 1
 
-     itr0    = 29000//smp_evry
-     itr1    = 30000//smp_evry
+     itr0    = 19000//smp_evry
+     itr1    = 20000//smp_evry
 
-     BnW1    = smp_Bns[0, itr0:itr1].T
-     BnT1    = smp_Bns[1, itr0:itr1].T
-     BnL1    = smp_Bns[2, itr0:itr1].T
-     BnW2    = smp_Bns[3, itr0:itr1].T
-     BnT2    = smp_Bns[4, itr0:itr1].T
-     BnL2    = smp_Bns[5, itr0:itr1].T
+     s       = 0
+     BnW1    = smp_Bns[s, 0, itr0:itr1].T
+     BnT1    = smp_Bns[s, 1, itr0:itr1].T
+     BnL1    = smp_Bns[s, 2, itr0:itr1].T
+     BnW2    = smp_Bns[s, 3, itr0:itr1].T
+     BnT2    = smp_Bns[s, 4, itr0:itr1].T
+     BnL2    = smp_Bns[s, 5, itr0:itr1].T
 
      tr0     = 0
      tr1     = BnW1.shape[0]-1
      print(tr1)
 
-     oW1     = smp_offsets[0, itr0:itr1, 0].T  #  itr1-itr0 x ndatlength
-     oT1     = smp_offsets[1, itr0:itr1, 0].T
-     oL1     = smp_offsets[2, itr0:itr1, 0].T
-     oW2     = smp_offsets[3, itr0:itr1, 0].T
-     oT2     = smp_offsets[4, itr0:itr1, 0].T
-     oL2     = smp_offsets[5, itr0:itr1, 0].T
+     oW1     = smp_offsets[s, 0, itr0:itr1].T  #  itr1-itr0 x ndatlength
+     oT1     = smp_offsets[s, 1, itr0:itr1].T
+     oL1     = smp_offsets[s, 2, itr0:itr1].T
+     oW2     = smp_offsets[s, 3, itr0:itr1].T
+     oT2     = smp_offsets[s, 4, itr0:itr1].T
+     oL2     = smp_offsets[s, 5, itr0:itr1].T
 
      hnd_dat = lm["hnd_dat"]
 
@@ -321,6 +332,7 @@ for dat_fn in dat_fns:
              lowLatSt= srtdLatSts[:, int(0.1*(itr1-itr0))]
              hiLatSt = srtdLatSts[:, int(0.9*(itr1-itr0))]
              _plt.plot(mednLatSt, color=clr, lw=2)
+             #_plt.plot(_N.arange(win//2, Tgame-win+win//2), emp_ngs[0, iw*3+itrans])
 
              _plt.plot([tr0, tr1], [static_cnd_probs[iw, itrans], static_cnd_probs[iw, itrans]], color=clr, lw=1, ls=":")
              _plt.fill_between(_N.arange(tr0, tr1), lowLatSt, y2=hiLatSt, color="#000000", alpha=0.1)
@@ -329,9 +341,9 @@ for dat_fn in dat_fns:
                     _plt.plot(Ts[tr0:tr1, iw, itrans], color="blue",lw=2)
              ax.set_ylabel("p(%(trs)s | %(wtl)s)" % {"wtl" : s_WTL_conds[iw], "trs" : s_trans[itrans]}, rotation=30, labelpad=25, fontsize=fnt_lbl)
              #ylb.set_rotation(0)
-             _plt.scatter(off_cond_events[iw][itrans], _N.ones(len(off_cond_events[iw][itrans]))*-0.1, s=8, color="grey", marker="|")
+             _plt.scatter(off_cond_events[iw][itrans], _N.ones(len(off_cond_events[iw][itrans]))*-0.12, s=8, color="grey", marker="|")
              _plt.scatter(cond_events[iw][itrans], _N.ones(len(cond_events[iw][itrans]))*-0.04, s=5, color="black", marker="o")
-             _plt.ylim(-0.15, 1)
+             _plt.ylim(-0.20, 1)
              
              #_plt.axhline(y=0.5, ls="--", color="grey")
              for ix in _N.arange(50, tr1, 50):
@@ -346,7 +358,7 @@ for dat_fn in dat_fns:
              _plt.yticks([0, 0.5, 1], ["0", "0.5", "1"], fontsize=fnt_tck)
              _plt.xticks([], fontsize=fnt_tck)
              #_plt.xlim(tr0, tr1)
-             _plt.xlim(tr0, tr0+200)   #  for proposal
+             _plt.xlim(tr0, tr0+285)   #  for proposal
 
              #######   autocorrelation of NGS(t) component
              ax = _plt.subplot2grid((10, 9), (iw*3+itrans, 7), colspan=2)
@@ -379,7 +391,7 @@ for dat_fn in dat_fns:
      _plt.ylabel("dNGS($t$)", rotation=30, labelpad=25)
      #_plt.ylim(0, 0.1)
      #_plt.xlim(tr0, tr1)
-     _plt.xlim(tr0, tr0+200)   #  for proposal
+     _plt.xlim(tr0, tr0+285)   #  for proposal
      _plt.xticks([])
      for ix in _N.arange(50, tr1, 50):
           _plt.axvline(x=ix, ls=":", color="grey")
@@ -392,7 +404,7 @@ for dat_fn in dat_fns:
 
      _plt.ylim(-0.3, 0.5)
      row123 = all_meds.reshape((9, prob_fmvs.shape[2]))
-     _N.savetxt("Results/%(rpsm)s/%(lb)d/cond_probs_%(fns)s%(sr)s.dat" % {"rpsm" : dat_fn, "fl" : fns[sig_cov], "lb" : label, "fns" : fns[sig_cov], "sr" : sran}, row123.T, fmt=("%.3f " * 9))
+     _N.savetxt(getResultFN("%(rpsm)s/%(lb)d/cond_probs_%(fns)s%(sr)s.dat" % {"rpsm" : dat_fn, "fl" : fns[sig_cov], "lb" : label, "fns" : fns[sig_cov], "sr" : sran}), row123.T, fmt=("%.3f " * 9))
 
 
      ##################################   clustered states
@@ -423,7 +435,7 @@ for dat_fn in dat_fns:
      #fig.subplots_adjust(top=0.96, left=0.13, right=0.98, bottom=0.04, wspace=0.33)
      fig.subplots_adjust(top=0.96, left=0.2, right=0.98, bottom=0.04, wspace=0.02)
 
-     #_plt.savefig("Results/%(rpsm)s/%(lb)d/cond_probs_%(fns)s%(sr)s.png" % {"rpsm" : dat_fn, "fl" : fns[sig_cov], "lb" : label, "fns" : fns[sig_cov], "sr" : sran})
+     _plt.savefig(getResultFN("%(rpsm)s/%(lb)d/cond_probs_%(fns)s%(sr)s1.png" % {"rpsm" : dat_fn, "fl" : fns[sig_cov], "lb" : label, "fns" : fns[sig_cov], "sr" : sran}))
      """
      _N.savetxt("Results/%(rpsm)s/%(lb)d/row123_%(fns)s%(sr)s.dat" % {"rpsm" : dat_fn, "fl" : fns[sig_cov], "lb" : label, "fns" : fns[sig_cov], "sr" : sran}, row123.T, fmt=("%.4f " * 9))
 

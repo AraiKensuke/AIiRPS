@@ -31,9 +31,9 @@ _RELATIVE_LAST_ME = 1    #  what to use as a comparison for when player switches
 _RELATIVE_LAST_AI = 2
 _RELATIVE_LAST_OU = 3    #  next outcome outcome
 
-ITER = 30000
+ITER = 20000
 
-label=6
+label=5
 #  priors for inv gamma   #  B/(a+1)
 #a_q2 = 100
 a_q2 = 4.
@@ -94,11 +94,11 @@ def sampleAR_and_offset(it, Tm1, vrnc, vrncL, \
         
     return offset, F0_B_n, q2_B_n
 
-def sample_offset_turn_AR_off(Tm1, vrnc, vrncL, \
-             B_n, v_n, offset, \
-             B_1_n, v_1, offset_1, \
-             B_2_n, v_2, offset_2, \
-             kappa, ws, q2_B_n, a_F0, b_F0, a_q2, B_q2, px, pV, fx, fV, K):
+def sample_offset_turn_AR_off(it, Tm1, vrnc, vrncL, \
+                              B_n, v_n, offset, \
+                              B_1_n, v_1, offset_1, \
+                              B_2_n, v_2, offset_2, \
+                              kappa, ws, q2_B_n, a_F0, b_F0, a_q2, B_q2, px, pV, fx, fV, K, random_walk):
     offset_mu = (kappa / ws - offset_1*v_1 - offset_2*v_2)/v_n
     mu_w  = _N.sum(offset_mu*ws) / _N.sum(ws)   #  from likelihood
     mu  = (mu_w*off_sig2 + off_mu*vrncL) / (off_sig2 + vrncL) # lklhd & prior
@@ -115,7 +115,7 @@ a_F0      = -1;    b_F0      =  1
 
 know_gt  = False
 signal   = _RELATIVE_LAST_ME
-covariates = _RPS
+covariates = _WTL
 
 tr0      = 0
 tr1      = -1
@@ -170,6 +170,7 @@ dat_fn         = "20Oct10-2329-43"
 #dat_fn       = "20Oct04-2121-49"
 #dat_fn      = "20May30-1301-57"    #simDat
 dat_fn       = "20Nov09-1756-23"
+dat_fn="20Apr24-1650-24"
 random_walk = False
 #########################################
 process_keyval_args(globals(), sys.argv[1:])
@@ -410,56 +411,56 @@ for it in range(ITER):
         #################
         if di == 0:
             o_w1, F0_Bw1, q2_Bw1 = sampleAR_and_offset(it, Tm1, vrnc1, vrncL1,
-                                                       B1wn, W_n, o_w1, 
-                                                       B1tn, T_n, o_t1, 
-                                                       B1ln, L_n, o_l1, 
-                                                       kappa[:, 0], ws1, q2_Bw1, a_F0, b_F0, a_q2,
-                                                       B_q2, w1_px, w1_pV, w1_fx, w1_fV, w1_K, random_walk)
+                                                             B1wn, W_n, o_w1, 
+                                                             B1tn, T_n, o_t1, 
+                                                             B1ln, L_n, o_l1, 
+                                                             kappa[:, 0], ws1, q2_Bw1, a_F0, b_F0, a_q2,
+                                                             B_q2, w1_px, w1_pV, w1_fx, w1_fV, w1_K, random_walk)
             smp_offsets[0, it] = o_w1[0]
         elif di == 1:
             #################
             o_t1, F0_Bt1, q2_Bt1 = sampleAR_and_offset(it, Tm1, vrnc1, vrncL1,
-                                                       B1tn, T_n, o_t1, 
-                                                       B1ln, L_n, o_l1, 
-                                                       B1wn, W_n, o_w1, 
-                                                       kappa[:, 0], ws1, q2_Bt1, a_F0, b_F0, a_q2,
-                                                       B_q2, t1_px, t1_pV, t1_fx, t1_fV, t1_K, random_walk)
+                                                             B1tn, T_n, o_t1, 
+                                                             B1ln, L_n, o_l1, 
+                                                             B1wn, W_n, o_w1, 
+                                                             kappa[:, 0], ws1, q2_Bt1, a_F0, b_F0, a_q2,
+                                                             B_q2, t1_px, t1_pV, t1_fx, t1_fV, t1_K, random_walk)
             smp_offsets[1, it] = o_t1[0]
         elif di == 2:
             #################
             o_l1, F0_Bl1, q2_Bl1 = sampleAR_and_offset(it, Tm1, vrnc1, vrncL1,
-                                                       B1ln, L_n, o_l1, 
-                                                       B1wn, W_n, o_w1, 
-                                                       B1tn, T_n, o_t1, 
-                                                       kappa[:, 0], ws1, q2_Bl1, a_F0, b_F0, a_q2, 
-                                                       B_q2, l1_px, l1_pV, l1_fx, l1_fV, l1_K, random_walk)
+                                                             B1ln, L_n, o_l1, 
+                                                             B1wn, W_n, o_w1, 
+                                                             B1tn, T_n, o_t1, 
+                                                             kappa[:, 0], ws1, q2_Bl1, a_F0, b_F0, a_q2, 
+                                                             B_q2, l1_px, l1_pV, l1_fx, l1_fV, l1_K, random_walk)
             smp_offsets[2, it] = o_l1[0]
         elif di == 3:
             #################
             o_w2, F0_Bw2, q2_Bw2 = sampleAR_and_offset(it, Tm1, vrnc2, vrncL2,
-                                                       B2wn, W_n, o_w2, 
-                                                       B2tn, T_n, o_t2, 
-                                                       B2ln, L_n, o_l2, 
-                                                       kappa[:, 1], ws2, q2_Bw2, a_F0, b_F0, a_q2,
-                                                       B_q2, w2_px, w2_pV, w2_fx, w2_fV, w2_K, random_walk)
+                                                             B2wn, W_n, o_w2, 
+                                                             B2tn, T_n, o_t2, 
+                                                             B2ln, L_n, o_l2, 
+                                                             kappa[:, 1], ws2, q2_Bw2, a_F0, b_F0, a_q2,
+                                                             B_q2, w2_px, w2_pV, w2_fx, w2_fV, w2_K, random_walk)
             smp_offsets[3, it] = o_w2[0]
         elif di == 4:
             #################
             o_t2, F0_Bt2, q2_Bt2 = sampleAR_and_offset(it, Tm1, vrnc2, vrncL2,
-                                                       B2tn, T_n, o_t2, 
-                                                       B2ln, L_n, o_l2, 
-                                                       B2wn, W_n, o_w2, 
-                                                       kappa[:, 1], ws2, q2_Bt2, a_F0, b_F0, a_q2,
-                                                       B_q2, t2_px, t2_pV, t2_fx, t2_fV, t2_K, random_walk)
+                                                            B2tn, T_n, o_t2, 
+                                                            B2ln, L_n, o_l2, 
+                                                            B2wn, W_n, o_w2, 
+                                                            kappa[:, 1], ws2, q2_Bt2, a_F0, b_F0, a_q2,
+                                                            B_q2, t2_px, t2_pV, t2_fx, t2_fV, t2_K, random_walk)
             smp_offsets[4, it] = o_t2[0]
         elif di == 5:
             #################
             o_l2, F0_Bl2, q2_Bl2 = sampleAR_and_offset(it, Tm1, vrnc2, vrncL2,
-                                                       B2ln, L_n, o_l2, 
-                                                       B2wn, W_n, o_w2, 
-                                                       B2tn, T_n, o_t2, 
-                                                       kappa[:, 1], ws2, q2_Bl2, a_F0, b_F0, a_q2, 
-                                                       B_q2, l2_px, l2_pV, l2_fx, l2_fV, l2_K, random_walk)
+                                                             B2ln, L_n, o_l2, 
+                                                             B2wn, W_n, o_w2, 
+                                                             B2tn, T_n, o_t2, 
+                                                             kappa[:, 1], ws2, q2_Bl2, a_F0, b_F0, a_q2, 
+                                                             B_q2, l2_px, l2_pV, l2_fx, l2_fV, l2_K, random_walk)
             smp_offsets[5, it] = o_l2[0]
 
     smp_Bns[0, it] = B1wn
@@ -474,8 +475,8 @@ for it in range(ITER):
     #    F0_Bw1 = F0_Bt1 = F0_Bl1 = F0_Bw2 = F0_Bt2 = F0_Bl2 = 1
     smp_F0s[it]  = F0_Bw1, F0_Bt1, F0_Bl1, F0_Bw2, F0_Bt2, F0_Bl2
     
-    lw.rpg_devroye(N_vec[:, 0], (B1wn+o_w1)*W_n + (B1tn+o_t1)*T_n + (B1ln+o_l1)*L_n, out=ws1)
-    lw.rpg_devroye(N_vec[:, 1], (B2wn+o_w2)*W_n + (B2tn+o_t2)*T_n + (B2ln+o_l2)*L_n, out=ws2)
+    lw.rpg_devroye(N_vec[:, 0], o_w1*W_n + o_t1*T_n + o_l1*L_n, out=ws1)
+    lw.rpg_devroye(N_vec[:, 1], o_w2*W_n + o_t2*T_n + o_l2*L_n, out=ws2)
 
     ws2[zr2] = 1e-20#1e-20
 
@@ -496,7 +497,7 @@ pklme["N_vec"]     = N_vec
 pklme["a_q2"]      = a_q2
 pklme["B_q2"]      = B_q2
 pklme["l_capped"]      = l_capped
-dmp = open("%(dir)s/%(rel)s,%(cov)s%(ran)s.dmp" % {"rel" : ssig, "cov" : scov, "ran" : sran, "dir" : out_dir}, "wb")
+dmp = open("%(dir)s/%(rel)s,%(cov)s%(ran)s2.dmp" % {"rel" : ssig, "cov" : scov, "ran" : sran, "dir" : out_dir}, "wb")
 pickle.dump(pklme, dmp, -1)
 dmp.close()
 print("capped:  %d" % capped)

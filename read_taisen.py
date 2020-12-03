@@ -1,73 +1,24 @@
 import numpy as _N
+import re
 
-def return_hnd_dat(ufn, tr0=0, tr1=None, know_gt=False):
-    baseDir = "/Users/arai/Sites/janken/taisen_data" if not know_gt else "/Users/arai/nctc/Workspace/janken/SimDat"
+def return_hnd_dat(ufn, tr0=0, tr1=None, know_gt=False, flip_human_AI=False):
+    baseDir = "/Users/arai/Sites/janken/taisen_data" if not know_gt else "/Users/arai/nctc/Workspace/AIiRPS_SimDat"
     with open('%(bd)s/rpsm_%(fn)s.dat' % {"bd" : baseDir, "fn" : ufn}, 'r') as f:
-        lines = f.read().splitlines() 
+        lines = f.read().splitlines()
 
     iCommOffset = 1 if lines[0][0] == "#" else 0
     rec_hands     = lines[iCommOffset].rstrip()
     rec_per_hands = lines[iCommOffset+1].rstrip()
     rec_reaction_times = lines[iCommOffset+2].rstrip()    
 
-    human_hands   = _N.array(rec_hands.split(" "), dtype=_N.int)
-    per_hands     = _N.array(rec_per_hands.split(" "), dtype=_N.int)
-    reaction_times = _N.array(rec_reaction_times.split(" "), dtype=_N.int)
-    #  First reaction_time is time from page load to 1st player response
-
-    N             = human_hands.shape[0]
-    hnd_dat = _N.empty((N, 4), dtype=_N.int)
-    wtl           = _N.empty(N, dtype=_N.int)
-
-    tr0     = 0 if tr0 is None else tr0
-    tr1     = N if tr1 is None else tr1
-    for i in range(N):
-        if (human_hands[i] == 1):   #  HUMAN GOO
-            if per_hands[i] == 1:
-                wtl[i] = 0
-            if per_hands[i] == 2:
-                wtl[i] = 1
-            if per_hands[i] == 3:   #  paa
-                wtl[i] = -1
-        elif (human_hands[i] == 2):   #  HUMAN CHOKI
-            if per_hands[i] == 1:   #  per goo
-                wtl[i] = -1
-            if per_hands[i] == 2:
-                wtl[i] = 0
-            if per_hands[i] == 3:   #  paa
-                wtl[i] = 1
-        elif (human_hands[i] == 3): #  HUMAN PAA
-            if per_hands[i] == 1:   
-                wtl[i] = 1
-            if per_hands[i] == 2:
-                wtl[i] = -1
-            if per_hands[i] == 3:   #  paa
-                wtl[i] = 0
-    hnd_dat[0, 3] = reaction_times[0]
-    for i in range(1, N):
-        hnd_dat[i, 3] = hnd_dat[i-1, 3] + reaction_times[i]
-
-    hnd_dat[:, 0] = human_hands
-    hnd_dat[:, 1] = per_hands
-    hnd_dat[:, 2] = wtl
-    #hnd_dat[:, 3] = 0
-
-    return hnd_dat
-
-
-def return_hnd_dat(ufn, tr0=0, tr1=None, know_gt=False):
-    baseDir = "/Users/arai/Sites/janken/taisen_data" if not know_gt else "/Users/arai/nctc/Workspace/janken/SimDat"
-    with open('%(bd)s/rpsm_%(fn)s.dat' % {"bd" : baseDir, "fn" : ufn}, 'r') as f:
-        lines = f.read().splitlines() 
-
-    iCommOffset = 1 if lines[0][0] == "#" else 0
-    rec_hands     = lines[iCommOffset].rstrip()
-    rec_per_hands = lines[iCommOffset+1].rstrip()
-    rec_reaction_times = lines[iCommOffset+2].rstrip()    
-
-    human_hands   = _N.array(rec_hands.split(" "), dtype=_N.int)
-    per_hands     = _N.array(rec_per_hands.split(" "), dtype=_N.int)
-    reaction_times = _N.array(rec_reaction_times.split(" "), dtype=_N.int)
+    hh  = re.split(" +", rec_hands)
+    if flip_human_AI:
+        human_hands   = _N.array(re.split(" +", rec_per_hands), dtype=_N.int)
+        per_hands     = _N.array(re.split(" +", rec_hands), dtype=_N.int)
+    else:
+        human_hands   = _N.array(re.split(" +", rec_hands), dtype=_N.int)
+        per_hands     = _N.array(re.split(" +", rec_per_hands), dtype=_N.int)
+    reaction_times = _N.array(re.split(" +", rec_reaction_times), dtype=_N.int)
     #  First reaction_time is time from page load to 1st player response
 
     N             = human_hands.shape[0]
