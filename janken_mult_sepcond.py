@@ -6,14 +6,14 @@ import pyPG as lw
 import LOSTtmp.kfARlib1c as _kfar
 import pickle
 
-import AIiRPS.utils.read_taisen as _rd
+import read_taisen as _rd
 import matplotlib.pyplot as _plt
 import os
 import sys
-import AIiRPS.models.labels as labels
+import labels
 from cmdlineargs import process_keyval_args
 
-from AIiRPS.utils.dir_util import getResultFN
+from dir_util import getResultFN
 
 def union_arrs(a1, a2):
      return _N.sort(_N.array(a1.tolist() + a2.tolist()))
