@@ -1,6 +1,5 @@
 #!/usr/bin/python
 
-
 import numpy as _N  #  must import this before pyPG when running from shell
 import pickle
 
@@ -160,14 +159,11 @@ nLoss = len(los_cond)
 cond_events = [[stay_win, wekr_win, strg_win],
                [stay_tie, wekr_tie, strg_tie],
                [stay_los, wekr_los, strg_los]]
+
 off_cond_events = [[union_arrs(wekr_win, strg_win), union_arrs(stay_win, strg_win), union_arrs(stay_win, wekr_win)],
                    [union_arrs(wekr_tie, strg_tie), union_arrs(stay_tie, strg_tie), union_arrs(stay_tie, wekr_tie)],
                    [union_arrs(wekr_los, strg_los), union_arrs(stay_los, strg_los), union_arrs(stay_los, wekr_los)]]
 marg_cond_events = [win_cond, tie_cond, los_cond]
-
-static_cnd_probs = _N.array([[len(stay_win) / nWins, len(wekr_win) / nWins, len(strg_win) / nWins],
-                             [len(stay_tie) / nTies, len(wekr_tie) / nTies, len(strg_tie) / nTies],
-                             [len(stay_los) / nLoss, len(wekr_los) / nLoss, len(strg_los) / nLoss]])
 
 s_WTL_conds = ["W", "T", "L"]
 s_trans = ["stay", "wekr", "strgr"]
@@ -317,100 +313,31 @@ for cond in range(3):
         fig.subplots_adjust(top=0.96, left=0.2, right=0.98, bottom=0.04, wspace=0.02)
         _plt.suptitle("%(df)s  %(sr)s" % {"df" : dat_fn, "sr" : sran})
 
-        _plt.savefig("%(od)s/cond_probs_%(fns)s%(sr)s%(fl)s.png" % {"rpsm" : dat_fn, "fl" : fns[sig_cov], "lb" : label, "fns" : fns[sig_cov], "sr" : sran, "od" : out_dir, "fl" : s_flip})
+        _plt.savefig("%(od)s/cond_probs_%(fns)s%(sr)s%(fl)s.png" % {"rpsm" : dat_fn, "lb" : label, "fns" : fns[sig_cov], "sr" : sran, "od" : out_dir, "fl" : s_flip})
 
-        #_plt.xlim(tr0, tr1)
+pklme = {}
+for i in range(0, ITER//smp_every):
+    for comp in range(6):
+        fill_unobserved(smp_Bns_all[comp, i*smp_every])
+pklme["smp_Bns"] = smp_Bns_all[:, ::smp_every]
+pklme["smp_q2s"] = smp_q2s[::smp_every]
+pklme["smp_F0s"] = smp_F0s[::smp_every]
+pklme["smp_offsets"] = smp_offsets_all[:, ::smp_every]
+pklme["smp_every"] = smp_every
+pklme["hnd_dat"]   = hnd_dat
+pklme["y_vec"]     = y_vec
+pklme["N_vec"]     = N_vec
+pklme["a_q2"]      = a_q2
+pklme["B_q2"]      = B_q2
+pklme["cond_probs"] = cond_probs
+pklme["l_capped"]      = l_capped
+pklme["separate"]  = True
+pklme["corrs1"] = corrs1
+pklme["corrs2"] = corrs2
+pklme["corrs12"] = corrs12
+pklme["flip"]   = s_flip
+dmp = open("%(dir)s/%(rel)s,%(cov)s%(ran)s%(flp)s.dmp" % {"rel" : ssig, "cov" : scov, "ran" : sran, "dir" : out_dir, "flp" : s_flip}, "wb")
+pickle.dump(pklme, dmp, -1)
+dmp.close()
+print("capped:  %d" % capped)
 
-
-             # #######   autocorrelation of NGS(t) component
-             # ax = _plt.subplot2grid((10, 9), (iw*3+itrans, 7), colspan=2)
-             # #_plt.acorr(prob_mvs[iw, itrans, tr0:tr1] - _N.mean(prob_mvs[iw, itrans, tr0:tr1]), maxlags=30)
-
-             # xs, ac = _eu.autocorrelate(mednLatSt, 30)
-             # _plt.plot(xs, ac, color="black")
-             # _plt.xticks([-30, -20, -10, 0, 10, 20, 30])
-             # _plt.grid(ls=":")
-             # #_plt.ylim(-0.15, 0.5)
-             # _plt.ylim(-0.3, 0.5)
-
-             # _plt.xticks([-30, -20, -10, 0, 10, 20, 30], ["", "", "", "", "", "", ""])
-
-
-# corrs1 = _N.zeros((9, 9))
-# corrs2 = _N.zeros((9, 9))
-# corrs12 = _N.zeros((9, 9))
-# for cond1 in range(3):
-#     for cond2 in range(cond1, 3):
-#         for itr1 in range(3):
-#             for itr2 in range(3):
-#                 if ((itr1 == itr2) and (cond1 != cond2)) or (itr1 != itr2):
-#                      pc1, pv1 = _ss.pearsonr(cond_probs[cond1, itr1, 2:N_all//2], cond_probs[cond2, itr2, 2:N_all//2])
-#                      pc2, pv2 = _ss.pearsonr(cond_probs[cond1, itr1, N_all//2:], cond_probs[cond2, itr2, N_all//2:])
-#                      pc12, pv12 = _ss.pearsonr(cond_probs[cond1, itr1, 2:], cond_probs[cond2, itr2, 2:])
-#                      str1 = "p(%(trs)s | %(wtl)s)" % {"wtl" : s_WTL_conds[cond1], "trs" : s_trans[itr1]},
-#                      str2 = "p(%(trs)s | %(wtl)s)" % {"wtl" : s_WTL_conds[cond2], "trs" : s_trans[itr2]},
-#                      print("%(s1)s %(s2)s" % {"s1" : str1, "s2" : str2})
-#                      print("    %(pc).3fpv=%(pv).3f" % {"pc" : pc1, "pv" : pv1, "s1" : str1, "s2" : str2})
-#                      print("    %(pc).3fpv=%(pv).3f" % {"pc" : pc2, "pv" : pv2, "s1" : str1, "s2" : str2})
-#                      corrs1[cond1*3+itr1, cond2*3+itr2]  = pc1
-#                      corrs1[cond2*3+itr2, cond1*3+itr1]  = pc1
-#                      corrs2[cond1*3+itr1, cond2*3+itr2]  = pc2
-#                      corrs2[cond2*3+itr2, cond1*3+itr1]  = pc2
-#                      corrs12[cond1*3+itr1, cond2*3+itr2] = pc12
-#                      corrs12[cond2*3+itr2, cond1*3+itr1] = pc12
-
-# fig = _plt.figure(figsize=(5, 12))
-# _plt.suptitle(dat_fn)
-# fig.add_subplot(3, 1, 1)
-# _plt.imshow(corrs1, vmin=-1, vmax=1, cmap="seismic")
-# _plt.plot([-0.5, 8.5], [5.5, 5.5], color="black", lw=2)
-# _plt.plot([-0.5, 8.5], [2.5, 2.5], color="black", lw=2)
-# _plt.plot([5.5, 5.5], [-0.5, 8.5], color="black", lw=2)
-# _plt.plot([2.5, 2.5], [-0.5, 8.5], color="black", lw=2)
-# _plt.plot([-0.5, 8.5], [-0.5, 8.5], color="black", lw=2)
-# fig.add_subplot(3, 1, 2)
-# _plt.imshow(corrs2, vmin=-1, vmax=1, cmap="seismic")
-# _plt.plot([-0.5, 8.5], [5.5, 5.5], color="black", lw=2)
-# _plt.plot([-0.5, 8.5], [2.5, 2.5], color="black", lw=2)
-# _plt.plot([5.5, 5.5], [-0.5, 8.5], color="black", lw=2)
-# _plt.plot([2.5, 2.5], [-0.5, 8.5], color="black", lw=2)
-# _plt.plot([-0.5, 8.5], [-0.5, 8.5], color="black", lw=2)
-# fig.add_subplot(3, 1, 3)
-# _plt.imshow(corrs12, vmin=-1, vmax=1, cmap="seismic")
-# _plt.plot([-0.5, 8.5], [5.5, 5.5], color="black", lw=2)
-# _plt.plot([-0.5, 8.5], [2.5, 2.5], color="black", lw=2)
-# _plt.plot([5.5, 5.5], [-0.5, 8.5], color="black", lw=2)
-# _plt.plot([2.5, 2.5], [-0.5, 8.5], color="black", lw=2)
-# _plt.plot([-0.5, 8.5], [-0.5, 8.5], color="black", lw=2)
-
-# _plt.savefig("%(od)s/cond_probs_corrs_%(fns)s%(sr)s%(flp)s.png" % {"rpsm" : dat_fn, "fl" : fns[sig_cov], "lb" : label, "fns" : fns[sig_cov], "sr" : sran, "od" : out_dir, "flp" : s_flip})
-
-# pklme = {}
-# #smp_every =  50
-# for i in range(0, ITER//smp_every):
-#     for comp in range(6):
-#         fill_unobserved(smp_Bns_all[comp, i*smp_every])
-# pklme["smp_Bns"] = smp_Bns_all[:, ::smp_every]
-# pklme["smp_q2s"] = smp_q2s[::smp_every]
-# pklme["smp_F0s"] = smp_F0s[::smp_every]
-# pklme["smp_offsets"] = smp_offsets_all[:, ::smp_every]
-# pklme["smp_every"] = smp_every
-# pklme["hnd_dat"]   = hnd_dat
-# pklme["y_vec"]     = y_vec
-# pklme["N_vec"]     = N_vec
-# pklme["a_q2"]      = a_q2
-# pklme["B_q2"]      = B_q2
-# pklme["cond_probs"] = cond_probs
-# pklme["l_capped"]      = l_capped
-# pklme["separate"]  = True
-# pklme["corrs1"] = corrs1
-# pklme["corrs2"] = corrs2
-# pklme["corrs12"] = corrs12
-# pklme["flip"]   = s_flip
-# dmp = open("%(dir)s/%(rel)s,%(cov)s%(ran)s%(flp)s.dmp" % {"rel" : ssig, "cov" : scov, "ran" : sran, "dir" : out_dir, "flp" : s_flip}, "wb")
-# pickle.dump(pklme, dmp, -1)
-# dmp.close()
-# print("capped:  %d" % capped)
-
-# #dsig = _N.sum(_N.sum(_N.abs(_N.diff(cond_probs, axis=2)), axis=1), axis=0)
-# #_plt.acorr(dsig[10:] - _N.mean(dsig[10:]), maxlags=30)
