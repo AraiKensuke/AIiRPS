@@ -90,7 +90,7 @@ tr1      = -1
 #dat_fn="20Jan08-1703-13"
 #dat_fn="20Aug12-1252-50"
 #dat_fn="20Nov22-1108-25"
-#dat_fn="20Nov21-2131-38"
+dat_fn="20Nov21-2131-38"
 #dat_fn="20Nov21-1959-30"
 
 random_walk = True
@@ -330,7 +330,7 @@ pklme["N_vec"]     = N_vec
 pklme["a_q2"]      = a_q2
 pklme["B_q2"]      = B_q2
 pklme["cond_probs"] = cond_probs
-pklme["l_capped"]      = l_capped
+#pklme["l_capped"]      = l_capped
 pklme["separate"]  = True
 pklme["corrs1"] = corrs1
 pklme["corrs2"] = corrs2

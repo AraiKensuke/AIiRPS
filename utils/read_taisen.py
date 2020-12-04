@@ -1,8 +1,18 @@
 import numpy as _N
 import re
+import os
+
+try:
+    if os.environ["AIiRPS_on_colab"]:
+        simulation_data_dir="AIiRPS/AIiRPS/sampledata/simu_vs_AI"
+        data_dir="AIiRPS/AIiRPS/sampledata/HP_vs_AI"
+except KeyError:   #####  SET THIS IF RUNNING LOCALLY
+    simulation_data_dir="/Users/arai/nctc/Workspace/AIiRPS_SimDAT"
+    data_dir="/Users/arai/Sites/janken/taisen_data"
 
 def return_hnd_dat(ufn, tr0=0, tr1=None, know_gt=False, flip_human_AI=False):
-    baseDir = "/Users/arai/Sites/janken/taisen_data" if not know_gt else "/Users/arai/nctc/Workspace/AIiRPS_SimDat"
+    global simulation_data_dir, data_dir
+    baseDir = data_dir if not know_gt else simulation_data_dir
     with open('%(bd)s/rpsm_%(fn)s.dat' % {"bd" : baseDir, "fn" : ufn}, 'r') as f:
         lines = f.read().splitlines()
 
@@ -154,7 +164,8 @@ def get_ME_RPS(hnd_dat, tr0, tr1):
 """
 
 def write_hnd_dat(hnd_dat, fn):
-    fp = open("/Users/arai/Sites/janken/taisen_data/rpsm_%s.dat" % fn, "w")
+    global simulation_data_dir, data_dir
+    fp = open("%(dd)s/rpsm_%{fn}s.dat" % {"dd" : data_dir, "fn" : fn}, "w")
     fp.write("#  player hands, AI hands, mv times, inp method, ini_weight, fin_weights, paced_or_free, AI_or_RNG\n")
     dat_strng = str(hnd_dat[:, 0]).replace("\n", "")
     fp.write("%s\n" % dat_strng[1:-1])
