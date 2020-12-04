@@ -9,7 +9,7 @@ import os
 import sys
 import AIiRPS.models.labels as labels
 from cmdlineargs import process_keyval_args
-import multinomial_gibbs as _mg
+import AIiRPS.models.multinomial_gibbs as _mg
 
 from AIiRPS.utils.dir_util import getResultFN
 
@@ -59,7 +59,7 @@ ITER = 30000
 it0  = 28000
 it1  = 30000
 
-label=8
+label=6
 #  priors for inv gamma   #  B/(a+1)
 
 rndmz = False
@@ -332,12 +332,11 @@ pklme["B_q2"]      = B_q2
 pklme["cond_probs"] = cond_probs
 #pklme["l_capped"]      = l_capped
 pklme["separate"]  = True
-pklme["corrs1"] = corrs1
-pklme["corrs2"] = corrs2
-pklme["corrs12"] = corrs12
+# pklme["corrs1"] = corrs1
+# pklme["corrs2"] = corrs2
+# pklme["corrs12"] = corrs12
 pklme["flip"]   = s_flip
 dmp = open("%(dir)s/%(rel)s,%(cov)s%(ran)s%(flp)s.dmp" % {"rel" : ssig, "cov" : scov, "ran" : sran, "dir" : out_dir, "flp" : s_flip}, "wb")
 pickle.dump(pklme, dmp, -1)
 dmp.close()
-print("capped:  %d" % capped)
 
