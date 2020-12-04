@@ -5,8 +5,8 @@ import os
 try:
     if os.environ["AIiRPS_on_colab"] == "1":
         print("found AIiRPS_on_colab")
-        simulation_data_dir="AIiRPS/AIiRPS/sampledata/simu_vs_AI"
-        data_dir="AIiRPS/AIiRPS/sampledata/HP_vs_AI"
+        simulation_data_dir="AIiRPS/sampledata/simu_vs_AI"
+        data_dir="AIiRPS/sampledata/HP_vs_AI"
 except KeyError:   #####  SET THIS IF RUNNING LOCALLY
     print("didn't find AIiRPS_on_colab")
     simulation_data_dir="/Users/arai/nctc/Workspace/AIiRPS_SimDAT"
