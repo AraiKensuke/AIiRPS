@@ -59,7 +59,7 @@ ITER = 30000
 it0  = 28000
 it1  = 30000
 
-label=6
+label=5
 #  priors for inv gamma   #  B/(a+1)
 
 rndmz = False
@@ -85,12 +85,12 @@ tr1      = -1
 #dat_fn="20May29-1923-44"
 #dat_fn="20May29-1419-14"
 #
-#dat_fn      = "20Jan09-1504-32"
+dat_fn      = "20Jan09-1504-32"
 #dat_fn="20Aug12-1331-06"
 #dat_fn="20Jan08-1703-13"
 #dat_fn="20Aug12-1252-50"
 #dat_fn="20Nov22-1108-25"
-dat_fn="20Nov21-2131-38"
+#dat_fn="20Nov21-2131-38"
 #dat_fn="20Nov21-1959-30"
 
 random_walk = True
@@ -177,6 +177,8 @@ fig = _plt.figure(figsize=(12, 7))
 K     = 3
 N     = 1   #  # of events observed, and distributed across K choices
 
+y_all = _N.empty(len(conds[0]) + len(conds[1]) + len(conds[2]), dtype=_N.int)
+
 for cond in range(3):
     thecond = conds[cond]
     Tm1     = len(thecond)
@@ -211,6 +213,7 @@ for cond in range(3):
             N_vec[n, k] = N - _N.sum(y_vec[n, 0:k])
         for k in range(K):
             kappa[n, k] = y_vec[n, k] - 0.5 * N_vec[n, k]
+    y_all[conds[cond]] = y
 
     smp_offsets = _N.empty((2, ITER))
     smp_Bns     = _N.empty((2, ITER, Tm1))
@@ -315,6 +318,22 @@ for cond in range(3):
 
         _plt.savefig("%(od)s/cond_probs_%(fns)s%(sr)s%(fl)s.png" % {"rpsm" : dat_fn, "lb" : label, "fns" : fns[sig_cov], "sr" : sran, "od" : out_dir, "fl" : s_flip})
 
+
+fig = _plt.figure(figsize=(12, 12))
+for iWTL1 in range(3):
+     for iWTL2 in range(3):
+          for iTr1 in range(3):
+               for iTr2 in range(3):
+                    st1 = iWTL1*3+iTr1
+                    st2 = iWTL2*3+iTr2
+                    if (st2 > st1):
+                         ax = fig.add_subplot(9, 9, st1*9 + st2 + 1)
+                         _plt.scatter(cond_probs[iWTL1, iTr1, 2:], cond_probs[iWTL2, iTr2, 2:], s=1, color="black")
+                         _plt.plot([0, 1], [0, 1], ls="--", color="grey", lw=1)
+                    ax.set_aspect("equal")
+
+
+"""
 pklme = {}
 for i in range(0, ITER//smp_every):
     for comp in range(6):
@@ -340,3 +359,4 @@ dmp = open("%(dir)s/%(rel)s,%(cov)s%(ran)s%(flp)s.dmp" % {"rel" : ssig, "cov" : 
 pickle.dump(pklme, dmp, -1)
 dmp.close()
 
+"""
