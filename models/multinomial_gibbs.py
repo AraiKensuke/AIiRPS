@@ -1,7 +1,8 @@
+import numpy as _N
 import scipy.stats as _ss
 import pyPG as lw
 import LOSTtmp.kfARlib1c as _kfar
-import numpy as _N
+
 
 
 capped = 0
