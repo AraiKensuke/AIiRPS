@@ -1,5 +1,5 @@
 import numpy as _N
-import read_taisen as _rt
+import AIiRPS.utils.read_taisen as _rt
 import matplotlib.pyplot as _plt
 
 lbl=13
@@ -29,8 +29,10 @@ dat_fn="20Aug12-1252-50"
 #dat_fn="20Nov27-0715-26"
 #dat_fn="20Nov21-2131-38"
 #dat_fn="20Nov22-1108-25"
-#dat_fn="20Nov21-1959-30"
+dat_fn="20Nov21-1959-30"
 #dat_fn="20Nov28-0704-42"
+#dat_fn="20Dec05-1207-25"
+#dat_fn="20Dec05-1214-44"
 know_gt=False
 #sran  = "ran" if rndmz else ""
 

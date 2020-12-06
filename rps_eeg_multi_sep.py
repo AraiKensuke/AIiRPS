@@ -219,10 +219,6 @@ als
               iw += 1   #  
               ic += 1
 
-              #_plt.title("conditioned on last WTL=%d" % (ic-1))
-              W = WTL_cond[0]
-              T = WTL_cond[1]
-              L = WTL_cond[2]
               for n in range(Tm1):
                   #  for each of the 6
                    exp1 = _N.exp((BnW1[n]+oW1)*W + (BnT1[n] + oT1)*T + (BnL1[n] + oL1)*L)
@@ -242,7 +238,8 @@ als
                              trm1 = 1 / (1 + exp1)
                              trm2 = 1 / (1 + exp2)
                              prob_mvs[iw, 2, n] = trm1 * trm2
-                        prob_fmvs[iw, ix] = savgol_filter(prob_mvs[iw, ix], savgol_win, 3) # window size 51, polynomial ord
+            for ix in range(3):
+                 prob_fmvs[iw, ix] = savgol_filter(prob_mvs[iw, ix], savgol_win, 3) # window size 51, polynomial ord
                         #prob_fmvs[iw, ix] = prob_mvs[iw, ix]
 
          these_covs = covWTLRPS

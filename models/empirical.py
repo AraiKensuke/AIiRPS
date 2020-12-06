@@ -1,4 +1,4 @@
-import read_taisen as _rt
+import AIiRPS.utils.read_taisen as _rt
 import numpy as _N
 
 def empirical_NGS(dat, SHUF=0, win=20):

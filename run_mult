@@ -95,13 +95,13 @@ dat_fns=("20Nov22-1108-25")
 
 signals=(${_REL_ME})
 covs=(${_WTL})
-label=2
+label=5
 
 #B_q2s=(5.)
 
-dat_fns=("20Nov21-1959-30")
+dat_fns=("20Nov21-1959-30" "20Nov21-2131-38" "20Nov22-1108-25" "20Jan09-1504-32" "20Jan08-1703-13" "20Aug12-1252-50" "20Aug12-1331-06" "20May29-1419-14" "20Jun01-0748-03" "20May29-1923-44")
 
-#dat_fns=("20Nov21-2131-38")
+#dat_fns=(
 #dat_fns=("20Nov22-0025-50")
 dat_fns=("20Nov22-1243-38")
 dat_fns=("20Nov22-1243-40")
@@ -113,22 +113,29 @@ dat_fns=("20Nov22-1108-25")
 #dat_fns=("20Nov21-1959-30")
 # dat_fns=("20Nov21-1959-30")
 dat_fns=("20Nov21-1959-30" "20Nov21-2131-38" "20Nov22-1108-25")
+#dat_fns=("20Jan09-1504-32" "20Jan08-1703-13" "20Aug12-1252-50" "20Aug12-1331-06" "20May29-1419-14" "20Jun01-0748-03" "20May29-1923-44")
+dat_fns=("20Aug18-1546-13")
+#dat_fns=("20Aug18-1603-42")
+#dat_fns=("20Aug18-1707-16" "20Aug18-1717-47")
+
 # dat_fns=("20Jan09-1504-32")
 # dat_fns=("20Jan08-1703-13")
 # dat_fns=("20May29-1419-14" "20Jun01-0748-03" "20May29-1923-44")
 #dat_fns=("20Nov22-1654-58" "20Nov22-1655-00" "20Nov22-1655-02")
 
+dat_fns=("20Nov09-1113-44")
+#dat_fns=("20Dec05-1207-23" "20Dec05-1207-25")
+dat_fns=("20Dec05-1214-42" "20Dec05-1214-44")
 rndmz="False"
 tr0="0"
 tr1="-1" 
-know_gt="False"
-random_walk="False"
-
+know_gt="True"
+random_walk="True"
 
 for dat_fn in ${dat_fns[@]}; do
     for signal in ${signals[@]}; do
 	for cov in ${covs[@]}; do
-    	    python janken_mult.py dat_fn=${dat_fn} label=${label} rndmz=${rndmz} tr0=${tr0} tr1=${tr1} signal=${signal} know_gt=${know_gt} covariates=${cov} random_walk=${random_walk}
+    	    python janken_mult_sepcond.py dat_fn=${dat_fn} label=${label} rndmz=${rndmz} tr0=${tr0} tr1=${tr1} signal=${signal} know_gt=${know_gt} covariates=${cov} random_walk=${random_walk}
 	done
     done
 done
