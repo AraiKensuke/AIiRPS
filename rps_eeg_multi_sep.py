@@ -1,15 +1,15 @@
 import numpy as _N
-import read_taisen as _rt
+import AIiRPS.utils.read_taisen as _rt
 import matplotlib.pyplot as _plt
 import scipy.signal as _ss
 from scipy.signal import savgol_filter
 import scipy.io as _scio
 import pickle
 import os
-import preprocess_ver
+import GCoh.preprocess_ver as _ppv
 import rpsms
 
-from dir_util import getResultFN
+from AIiRPS.utils.dir_util import getResultFN
 
 _ME_WTL = 0
 _ME_RPS = 1
@@ -48,15 +48,14 @@ def depickle(s):
 #dats = {"20Jan09-1504-32" : ["Jan092020_15_05_39", "gcoh_256_256", "12:00:00", "12:00:00", 0, None, 6, [_CHG_WTL1, _CHG_WTL2, _CHG_WTL3, _LTP_WTL1, _LTP_WTL2, _LTP_WTL3, _BTP_WTL1, _BTP_WTL2, _BTP_WTL3], 5, 4, 3],
 #dats = {"20Jan09-1504-32" : ["Jan092020_15_05_39", "gcoh_256_256", "12:00:00", "12:00:00", 0, None, 6, 6, 6, 6, 6, 6, 5, 4, 2],
 #dats = {"20Jan09-1504-32" : ["Jan092020_15_05_39", "gcoh_256_64", "12:00:00", "12:00:00", 0, None, 6, 6, 6, 6, 6, 6, 5, 4, 3],
-dats = {"20Jan09-1504-32" : ["12:00:00", "12:00:00", 0, None, 8, None, 1, 4, 3, 9],
-        "20Aug18-1624-01" : ["12:00:00", "12:00:01", 0, None, 10, None, 1, 1, 3, 9],
-        "20Jan08-1703-13" : ["12:00:00", "12:00:01", 0, None, 8, None, 1, 1, 3, 9],
-        "20Aug18-1644-09" : ["12:00:00", "12:00:01", 0, None, 9, None, 1, 1, 3, 9],
-        #"20Aug18-1644-09" : ["12:00:00", "12:00:01", 0, None, 1, [_ME_WTL, _AI_WTL], None, 1, 1, 3, 9],
-        "20Aug18-1546-13" : ["12:00:00", "12:00:01", 0, None, 8, None, 1, 1, 3, 11],
-        "20Aug18-1603-42" : ["12:00:00", "12:00:01", 0, None, 8, None, 1, 1, 3, 11],
-        "20Aug12-1252-50" : ["12:00:00", "12:00:01", 0, None, 8, None, 1, 1, 3, 11],
-        "20Aug12-1331-06" : ["12:00:00", "12:00:01", 0, None, 8, None, 1, 1, 3, 9]
+dats = {"20Jan09-1504-32" : ["12:00:00", "12:00:00", 5, 4, 3, 5],
+        "20Aug18-1624-01" : ["12:00:00", "12:00:01", 100, 1, 3, 5],
+        "20Jan08-1703-13" : ["12:00:00", "12:00:01", 5, 1, 3, 5],
+        "20Aug18-1644-09" : ["12:00:00", "12:00:01", 100, 1, 3, 5],
+        "20Aug18-1546-13" : ["12:00:00", "12:00:01", 5, 1, 3, 5],
+        "20Aug18-1603-42" : ["12:00:00", "12:00:01", 8, 1, 3, 5],
+        "20Aug12-1252-50" : ["12:00:00", "12:00:01", 5, 1, 3, 5],
+        "20Aug12-1331-06" : ["12:00:00", "12:00:01", 5, 1, 3, 5]
 }
 
 #dats = {"rpsm_20Jan09-1500-00.dat" : ["Jan092020_15_00_35_artfctrmvd.dat", "12:00:00", "12:00:00"]}
@@ -117,24 +116,22 @@ als
 
     _hnd_dat            = _rt.return_hnd_dat(rpsm_key)
     trials          = _hnd_dat.shape[0]
+    print("!!!!!  trials %d" % trials)
 
     #  the weight each one should have is just proportional to the # of events 
     #  of the condition (WTL) observed.  
 
-    tr0     = 0 if dats[rpsm_key][2] is None else dats[rpsm_key][2]
-    tr1     = trials if dats[rpsm_key][3] is None else dats[rpsm_key][3]
+    tr0     = 0 
+    tr1     = trials
 
-    label   = dats[rpsm_key][4]
+    label   = dats[rpsm_key][2]
     #covWTLRPS     = dats[rpsm_key][6] if dats[rpsm_key][6] is not None else [_N.array([_W, _T, _L]), _N.array([_R, _P, _S])]
     #covWTLRPS     = dats[rpsm_key][6] if dats[rpsm_key][6] is not None else [_N.array([_W, _T, _L])]
 
-    behv_list = dats[rpsm_key][5] if dats[rpsm_key][5] is not None else [_ME_WTL]
-    start_offset    = dats[rpsm_key][6]     #  hnd_dat is differentiated and smoothed.  We further then do a start_offset on resulting N-2 length vector
+    armv_ver = dats[rpsm_key][3]
+    gcoh_ver = dats[rpsm_key][4]
 
-    armv_ver = dats[rpsm_key][7]
-    gcoh_ver = dats[rpsm_key][8]
-
-    win_spec, slideby_spec      = preprocess_ver.get_win_slideby(gcoh_ver)
+    win_spec, slideby_spec      = _ppv.get_win_slideby(gcoh_ver)
     win_gcoh        = win_spec
     slideby_gcoh    = slideby_spec
 
@@ -165,89 +162,49 @@ als
     dat_pkg["behv"]              = []
     dat_pkg["behv_ts"]           = []
 
-    savgol_win                   = dats[rpsm_key][9]
+    savgol_win                   = dats[rpsm_key][5]
     #%(dat)s,%(rel)s,%(cov)s%(ran)s
     sum_chosen_behv_sig          = None#_N.zeros((len(behv_list), Tm1))
     sigcov_behv_sig              = None
     sigcov_behv_fsig              = None
     fig = _plt.figure(figsize=(10, 8))
-    for bi in range(len(behv_list)):
-         covWTLRPS = _N.array([_W, _T, _L]) if behv_list[bi] == _ME_WTL else _N.array([_R, _P, _S])
-         sig_cov   = behv_list[bi]
+    for bi in range(1):
+         covWTLRPS = _N.array([_W, _T, _L])# if behv_list[bi] == _ME_WTL else _N.array([_R, _P, _S])
+         sig_cov   = _ME_WTL#behv_list[bi]
          behv_file = fns[sig_cov]
          print(getResultFN("%(rpsm)s/%(lb)d/%(fl)s.dmp" % {"rpsm" : rpsm_key, "fl" : behv_file, "lb" : label}))
          dmp       = depickle(getResultFN("%(rpsm)s/%(lb)d/%(fl)s.dmp" % {"rpsm" : rpsm_key, "fl" : behv_file, "lb" : label}))
 
-         y_vec   = dmp["y_vec"]
-         N_vec   = dmp["N_vec"]
-         smp_Bns = dmp["smp_Bns"]
-         smp_evry= dmp["smp_every"]
-         smp_offsets= dmp["smp_offsets"]
-         Tm1     = y_vec.shape[0] - 1
+         cond_probs = dmp["cond_probs"]
+         Tm1     = cond_probs.shape[2]    # because AR1 filter is shorter by 1
+         #  dNGS then should at most be Tm1 - 1
+         print("trials %(tr)d   Tm1 %(Tm1)d" % {"tr" : trials, "Tm1" : Tm1})
 
          if sigcov_behv_sig is None:
-              sigcov_behv_sig  = _N.zeros((len(behv_list), Tm1-1))
-              sigcov_behv_fsig = _N.zeros((len(behv_list), Tm1-1))
+              #  Tm1 - 1 (because derivative)
+              sigcov_behv_sig  = _N.zeros((1, Tm1-1))
+              sigcov_behv_fsig = _N.zeros((1, Tm1-1))
 
-         itr0    = 18000//smp_evry
-         itr1    = 20000//smp_evry
-
-         BnW1    = _N.mean(smp_Bns[0, itr0:itr1], axis=0)
-         BnT1    = _N.mean(smp_Bns[1, itr0:itr1], axis=0)
-         BnL1    = _N.mean(smp_Bns[2, itr0:itr1], axis=0)
-         BnW2    = _N.mean(smp_Bns[3, itr0:itr1], axis=0)
-         BnT2    = _N.mean(smp_Bns[4, itr0:itr1], axis=0)
-         BnL2    = _N.mean(smp_Bns[5, itr0:itr1], axis=0)
-         oW1     = _N.mean(smp_offsets[0, itr0:itr1, 0], axis=0)
-         oT1     = _N.mean(smp_offsets[1, itr0:itr1, 0], axis=0)
-         oL1     = _N.mean(smp_offsets[2, itr0:itr1, 0], axis=0)
-         oW2     = _N.mean(smp_offsets[3, itr0:itr1, 0], axis=0)
-         oT2     = _N.mean(smp_offsets[4, itr0:itr1, 0], axis=0)
-         oL2     = _N.mean(smp_offsets[5, itr0:itr1, 0], axis=0)
-
-         prob_mvs  = _N.zeros((3, 3, Tm1))
+         print("sigcov_behv_sig  shape")
+         print(sigcov_behv_sig.shape)
+         prob_mvs  = cond_probs
          prob_fmvs = _N.zeros((3, 3, Tm1))
+         print("cond_probs  shape")
+         print(cond_probs.shape)
+         print("Tm1   %d" % Tm1)
+         print("prob_mvs shape")
+         print(prob_mvs.shape)
 
-         savgol_win = 15
-         WTL_conds = _N.array([[1, -1, -1], [-1, 1, -1], [-1, -1, -1]])
-         
-         ic = 0
-         #for WTL_cond in [[1, -1, -1], [-1, 1, -1], [-1, -1, -1]]:
-         iw = -1
-
-         for WTL_cond in WTL_conds:
-              iw += 1   #  
-              ic += 1
-
-              for n in range(Tm1):
-                  #  for each of the 6
-                   exp1 = _N.exp((BnW1[n]+oW1)*W + (BnT1[n] + oT1)*T + (BnL1[n] + oL1)*L)
-                   exp2 = _N.exp((BnW2[n]+oW2)*W + (BnT2[n] + oT2)*T + (BnL2[n] + oL2)*L)
-                   ix = -1
-                   for x in [_N.array([1, 0, 0]), _N.array([0, 1, 0]), _N.array([0, 0, 1])]:
-                        ix += 1
-                        if x[0] == 1:         #  x_vec=[1, 0, 0], N_vec=[1, 0, 0]  STAY
-                             trm1 = exp1 / (1 + exp1)
-                             trm2 = 1   #  1 / 1
-                             prob_mvs[iw, 0, n] = trm1*trm2
-                        elif x[1] == 1:  #  x_vec=[0, 1, 0], N_vec=[1, 1, 0]       LOSER
-                             trm1 = 1 / (1 + exp1)
-                             trm2 = exp2 / (1 + exp2)
-                             prob_mvs[iw, 1, n] = trm1 * trm2
-                        elif x[2] == 1:  #  x_vec=[0, 0, 1], N_vec=[1, 1, 1]       WINNER
-                             trm1 = 1 / (1 + exp1)
-                             trm2 = 1 / (1 + exp2)
-                             prob_mvs[iw, 2, n] = trm1 * trm2
+         for iw in range(3):
             for ix in range(3):
                  prob_fmvs[iw, ix] = savgol_filter(prob_mvs[iw, ix], savgol_win, 3) # window size 51, polynomial ord
-                        #prob_fmvs[iw, ix] = prob_mvs[iw, ix]
 
          these_covs = covWTLRPS
          
          #  sum over WTL condition first
          sigcov_behv_sig[bi] = _N.sum(_N.sum(_N.abs(_N.diff(prob_mvs[these_covs], axis=2)), axis=1), axis=0)
          sigcov_behv_fsig[bi] = _N.sum(_N.sum(_N.abs(_N.diff(prob_fmvs[these_covs], axis=2)), axis=1), axis=0)
-
+         n = 0
 
          fig.add_subplot(3, 2, bi*2+1)
          bhv = sigcov_behv_sig[bi]
@@ -266,11 +223,12 @@ als
     # fig.add_subplot(3, 2, 6)
     # _plt.xcorr(bhv1 - _N.mean(bhv1), bhv2 - _N.mean(bhv2), maxlags=30)
 
-    dat_pkg["behv_list"] = behv_list
     dat_pkg["behv"]  = sigcov_behv_sig
     dat_pkg["fbehv"]  = sigcov_behv_fsig
     dat_pkg["savgol_win"] = savgol_win
-    dat_pkg["behv_ts"] = hnd_dat[1+start_offset:-1, 3]
+    dat_pkg["behv_ts"] = hnd_dat[2:, 3]
+    print("behv_ts shape")
+    print(dat_pkg["behv_ts"].shape)
     dat_pkg["hnd_dat"] = hnd_dat
           
     #chg_rps         = _N.loadtxt("Results/%s/mdl7b_chg_rps_mns" % rpsm_key)
@@ -295,7 +253,8 @@ als
 
     d_start = d_reprtd_start - (t_rpsm - t_eeg)
 
-    print(d_start)
+    print("recording start time difference between page load and EEG hit record (negative means EEG started earlier)  %d" % d_start)
+
     #######################################
     hnd_dat[:, 3] += d_start*1000
     #   RPS hands       N pts
@@ -307,10 +266,9 @@ als
     #dat_pkg["dchg_wtl_with_ts"] = dchg_wtl_with_ts
     #dat_pkg["dbtp_wtl_with_ts"] = dbtp_wtl_with_ts
 
-    print(dsi_fn)
     if gcoh_fn is not None:
-         eeg_dat = _N.loadtxt("../Neurable/DSi_dat/%(dsf)s_artfctrmvd/v%(av)d/%(dsf)s_artfctrmvd_v%(av)d.dat" % {"dsf" : dsi_fn, "av" : armv_ver, "gv" : gcoh_ver})
-         gcoh_lm         = depickle("../Neurable/DSi_dat/%(dsf)s_artfctrmvd/v%(av)d/%(dsf)s_%(gf)s_v%(av)d%(gv)d.dmp" % {"gf" : gcoh_fn, "dsf" : dsi_fn, "av" : armv_ver, "gv" : gcoh_ver})
+         eeg_dat = _N.loadtxt("../DSi_dat/%(dsf)s_artfctrmvd/v%(av)d/%(dsf)s_artfctrmvd_v%(av)d.dat" % {"dsf" : dsi_fn, "av" : armv_ver, "gv" : gcoh_ver})
+         gcoh_lm         = depickle("../DSi_dat/%(dsf)s_artfctrmvd/v%(av)d/%(dsf)s_%(gf)s_v%(av)d%(gv)d.dmp" % {"gf" : gcoh_fn, "dsf" : dsi_fn, "av" : armv_ver, "gv" : gcoh_ver})
 
     if not os.access(getResultFN("%(dsf)s" % {"dsf" : dsi_fn}), os.F_OK):
          os.mkdir("Results/%(dsf)s" % {"dsf" : dsi_fn})
@@ -364,7 +322,6 @@ als
 
         dat_pkg["ts_gcoh"]= overlapping_window_center_times(eeg_dat.shape[0], win_gcoh, slideby_gcoh, 300.)
         print(dat_pkg["ts_gcoh"])
-        print(dat_pkg["ts_gcoh"].shape)
         dat_pkg["gcoh_fn"]  = gcoh_fn
         ####  time 
         ts_eeg_dfind  = _N.linspace(0, eeg_dat.shape[0]/300., eeg_dat.shape[0])
@@ -395,13 +352,15 @@ als
 
 #  THESE KEYS ARE RPS GAME DATA NAMES
 #for rpsm_key in ["20Jan08-1703-13"]:
-#for rpsm_key in ["20Jan08-1642-20"]:
 #for rpsm_key in ["20Jan09-1504-32"]:
 #for rpsm_key in ["20Aug12-1331-06"]:
-#for rpsm_key in ["20Aug12-1252-50"]:#", "20Jan09-1504-32", "20Aug18-1644-09", "20Aug18-1624-01"]:
+#for rpsm_key in ["20Aug12-1252-50", "20Jan09-1504-32", "20Aug18-1644-09", "20Aug18-1624-01", "20Aug12-1331-06"]:
+#for rpsm_key in ["20Aug12-1252-50", "20Jan09-1504-32", "20Aug18-1644-09", "20Aug18-1624-01", "20Aug12-1331-06"]:
+for rpsm_key in ["20Jan08-1703-13", "20Jan09-1504-32", "20Aug12-1252-50", "20Aug12-1331-06", "20Aug18-1546-13"]:
+#for rpsm_key in ["20Aug12-1252-50"]:
 #for rpsm_key in ["20Aug18-1644-09"]:
 #for rpsm_key in ["20Aug18-1546-13"]:
-for rpsm_key in ["20Aug18-1603-42"]:
+#for rpsm_key in ["20Aug18-1603-42"]:
 #for rpsm_key in ["20Aug18-1624-01"]:
     savedir, dat_pkg, win_gcoh, slideby_gcoh, armv_ver, gcoh_ver = pkg_all_data(rpsm_key)  #  first nperseg/2 points are constant
     #pkg_all_data(rpsm_key)  #  first nperseg/2 points are constant

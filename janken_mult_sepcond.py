@@ -55,9 +55,9 @@ _ME_WTL = 0
 _RELATIVE_LAST_ME = 1    #  what to use as a comparison for when player switches
 
 smp_every = 50
-ITER = 30000
-it0  = 28000
-it1  = 30000
+ITER = 35000
+it0  = 31000
+it1  = 35000
 
 label=5
 #  priors for inv gamma   #  B/(a+1)
@@ -65,12 +65,12 @@ label=5
 rndmz = False
 
 ######  AR(1) coefficient range 
-a_F0      = -1;    b_F0      =  1
+a_F0      = 0;    b_F0      =  1
 
 ######  int main 
 #int i,pred,m,v[3],x[3*N+1],w[9*N+3],fw[3];
 
-know_gt  = True
+know_gt  = False
 signal   = _RELATIVE_LAST_ME
 covariates = _WTL
 sig_cov   = _ME_WTL
@@ -82,18 +82,18 @@ tr1      = -1
 #dat_fn        = "20Aug18-1624-01"
 
 #dat_fn="20Jun01-0748-03"
-dat_fn="20May29-1923-44"
+#dat_fn="20May29-1923-44"
 #dat_fn="20May29-1419-14"
 #
-#dat_fn      = "20Jan09-1504-32"
+dat_fn      = "20Jan09-1504-32"
 #dat_fn="20Aug12-1331-06"
 #dat_fn="20Jan08-1703-13"
 #dat_fn="20Aug12-1252-50"
 #dat_fn="20Nov22-1108-25"
 #dat_fn="20Nov21-2131-38"
 #dat_fn="20Nov21-1959-30"
-dat_fn="20Dec05-0913-27"
-dat_fn="20Dec05-0950-54"
+#dat_fn="20Dec05-0913-27"
+#dat_fn="20Dec05-0950-54"
 
 random_walk = True
 flip_human_AI=False
@@ -294,6 +294,8 @@ for cond in range(3):
         fill_unobserved(cond_probs[cond, i])
         fill_unobserved(lower_conf)
         fill_unobserved(upper_conf)
+
+        """
         ax = fig.add_subplot(9, 1, 3*cond+1+i)
         #_plt.fill_between(1+_N.arange(N_all), lower_conf, upper_conf, color="#FFAAAA")
         _plt.plot(1+_N.arange(Tm1), prob_mvs[i], color="black")
@@ -319,6 +321,46 @@ for cond in range(3):
         _plt.suptitle("%(df)s  %(sr)s" % {"df" : dat_fn, "sr" : sran})
 
         _plt.savefig("%(od)s/cond_probs_%(fns)s%(sr)s%(fl)s.png" % {"rpsm" : dat_fn, "lb" : label, "fns" : fns[sig_cov], "sr" : sran, "od" : out_dir, "fl" : s_flip})
+        """
+sTr = ["STAY", "DNGRD", "UPGRD"]
+sCnd =["WIN", "TIE", "LOS"]
+fig = _plt.figure(figsize=(12, 10.5))
+for iWTL in range(3):
+   for iTrn in range(3):
+      ax = fig.add_subplot(9, 1, 3*iWTL+iTrn+1)
+      if iWTL == 0:
+        ax.set_facecolor("#BBFFBB")
+      elif iWTL == 1:
+        ax.set_facecolor("#FFFFBB")
+      elif iWTL == 2:
+        ax.set_facecolor("#FFBBBB")
+      if iTrn == 0:  #  stay
+        tTrans    = _N.where(y_all[conds[iWTL]] == 0)[0]
+        tTransOth = _N.where((y_all[conds[iWTL]] == 1) | (y_all[conds[iWTL]] == -1))[0]
+      elif iTrn == 1:  #  dn
+        tTrans    = _N.where(y_all[conds[iWTL]] == -1)[0]
+        tTransOth = _N.where((y_all[conds[iWTL]] == 1) | (y_all[conds[iWTL]] == 0))[0]
+      elif iTrn == 2:  #  up
+        tTrans    = _N.where(y_all[conds[iWTL]] == 1)[0]
+        tTransOth = _N.where((y_all[conds[iWTL]] == -1) | (y_all[conds[iWTL]] == 0))[0]
+
+      ax.set_ylabel("p(%(trs)s | %(wtl)s)" % {"wtl" : sCnd[iWTL], "trs" : sTr[iTrn]}, rotation=10, labelpad=35, fontsize=13)
+      _plt.scatter(conds[iWTL][tTrans]+1, _N.ones(len(tTrans))*-0.01, marker=".", s=9, color="black")
+      _plt.scatter(conds[iWTL][tTransOth]+1, _N.ones(len(tTransOth))*-0.08, marker="|", s=6, color="grey")
+      _plt.plot(cond_probs[iWTL, iTrn], lw=2, color="black")
+      xtcklocs = _N.arange(0, N_all, 50)
+      if (iWTL == 2) and (iTrn == 2):
+        _plt.xticks(xtcklocs, fontsize=11)
+        _plt.xlabel("RPS game #")
+      else:
+        _plt.xticks(xtcklocs, [''] * len(xtcklocs))
+
+      _plt.ylim(-0.15, 1.01)
+      _plt.xlim(-1, N_all+1)
+fig.subplots_adjust(top=0.96, left=0.2, right=0.98, bottom=0.04, wspace=0.02)
+_plt.suptitle("%(df)s  %(sr)s" % {"df" : dat_fn, "sr" : sran})
+
+_plt.savefig("%(od)s/cond_probs_%(fns)s%(sr)s%(fl)s.png" % {"rpsm" : dat_fn, "lb" : label, "fns" : fns[sig_cov], "sr" : sran, "od" : out_dir, "fl" : s_flip})
 
 
 div1 = cond_probs[0, :, 2:] - cond_probs[0, :, 2].reshape(3, 1)
@@ -353,6 +395,14 @@ fig.subplots_adjust(left=0.06, bottom=0.06, right=0.98, top=0.95)
 _plt.suptitle(dat_fn)
 _plt.savefig("%(od)s/nvs_v_%(fns)s%(sr)s%(fl)s.png" % {"rpsm" : dat_fn, "lb" : label, "fns" : fns[sig_cov], "sr" : sran, "od" : out_dir, "fl" : s_flip})
 
+
+for iw in range(3):
+     for ix in range(3):
+          n = 0
+          while cond_probs[iw, ix, n] == -100:
+               n += 1
+          print("%(iw)d  %(ix)d   %(n)d" % {"iw" : iw, "ix" : ix, "n" : n})
+          cond_probs[iw, ix, 0:n] = cond_probs[iw, ix, n]
 
 
 pklme = {}

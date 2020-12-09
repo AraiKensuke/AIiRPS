@@ -111,7 +111,10 @@ def get_ME_WTL(hnd_dat, tr0, tr1):
      tie_cond= _N.array(stay_tie.tolist() + wekr_tie + strg_tie)
      los_cond= _N.array(stay_los.tolist() + wekr_los + strg_los)
 
-     return _N.array(stay_win), _N.array(strg_win), _N.array(wekr_win), _N.array(stay_tie), _N.array(wekr_tie), _N.array(strg_tie), _N.array(stay_los), _N.array(wekr_los), _N.array(strg_los), win_cond, tie_cond, los_cond
+     return _N.array(stay_win), _N.array(wekr_win), _N.array(strg_win), \
+         _N.array(stay_tie), _N.array(wekr_tie), _N.array(strg_tie), \
+         _N.array(stay_los), _N.array(wekr_los), _N.array(strg_los), \
+         win_cond, tie_cond, los_cond
 
 
 def get_ME_RPS(hnd_dat, tr0, tr1):

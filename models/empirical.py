@@ -1,5 +1,6 @@
 import AIiRPS.utils.read_taisen as _rt
 import numpy as _N
+from filter import gauKer 
 
 def empirical_NGS(dat, SHUF=0, win=20):
     _td = _rt.return_hnd_dat(dat)
@@ -66,7 +67,6 @@ def empirical_NGS(dat, SHUF=0, win=20):
                 cprobs[shf, 4, i] = n_tie_dn / n_tie
                 cprobs[shf, 5, i] = n_tie_up / n_tie
             else:
-                print("zero")
                 cprobs[shf, 3, i] = cprobs[shf, 3, i-1]
                 cprobs[shf, 4, i] = cprobs[shf, 4, i-1]
                 cprobs[shf, 5, i] = cprobs[shf, 5, i-1]
@@ -79,3 +79,54 @@ def empirical_NGS(dat, SHUF=0, win=20):
                 cprobs[shf, 7, i] = cprobs[shf, 7, i-1]
                 cprobs[shf, 8, i] = cprobs[shf, 8, i-1]
     return cprobs, Tgame
+ 
+
+def kernel_NGS(dat, SHUF=0, kerwin=3):
+    _td = _rt.return_hnd_dat(dat)
+    Tgame= _td.shape[0]
+    cprobs = _N.zeros((3, 3, Tgame-1))
+
+    stay_win, dn_win, up_win, stay_tie, dn_tie, up_tie, stay_los, dn_los, up_los, win_cond, tie_cond, los_cond  = _rt.get_ME_WTL(_td, 0, Tgame)
+
+    gk = gauKer(kerwin)
+    gk /= _N.sum(gk)
+    all_cnd_tr = _N.zeros((3, 3, Tgame-1))
+    ker_all_cnd_tr = _N.ones((3, 3, Tgame-1))*-100
+
+    all_cnd_tr[0, 0, stay_win] = 1
+    all_cnd_tr[0, 1, dn_win] = 1
+    all_cnd_tr[0, 2, up_win] = 1
+    all_cnd_tr[1, 0, stay_tie] = 1
+    all_cnd_tr[1, 1, dn_tie] = 1
+    all_cnd_tr[1, 2, up_tie] = 1
+    all_cnd_tr[2, 0, stay_los] = 1
+    all_cnd_tr[2, 1, dn_los] = 1
+    all_cnd_tr[2, 2, up_los] = 1
+
+    for iw in range(3):
+        if iw == 0:
+            cond = _N.sort(win_cond)
+        elif iw == 1:
+            cond = _N.sort(tie_cond)
+        elif iw == 2:
+            cond = _N.sort(los_cond)
+
+        for it in range(3):
+            print(all_cnd_tr[iw, it, cond])
+            ker_all_cnd_tr[iw, it, cond] = _N.convolve(all_cnd_tr[iw, it, cond], gk, mode="same")
+            for n in range(1, Tgame-1):
+                if ker_all_cnd_tr[iw, it, n] == -100:
+                    ker_all_cnd_tr[iw, it, n] = ker_all_cnd_tr[iw, it, n-1]
+            n = 0
+            while ker_all_cnd_tr[iw, it, n] == -100:
+                n += 1
+            ker_all_cnd_tr[iw, it, 0:n] = ker_all_cnd_tr[iw, it, n]
+
+    for iw in range(3):
+        for_cond = _N.sum(ker_all_cnd_tr[iw], axis=0)
+        for it in range(3):
+            print(ker_all_cnd_tr[iw, it].shape)
+            ker_all_cnd_tr[iw, it] /= for_cond
+    
+    return ker_all_cnd_tr
+    

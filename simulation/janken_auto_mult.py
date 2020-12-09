@@ -1,9 +1,8 @@
-import prcptrn2dw as prcptrn
+import AIiRPS.simulation.prcptrn2dw as prcptrn
 import numpy as _N
 import time as _tm
-import janken_switch_hands_multi as _jsh
+import AIiRPS.simulation.janken_switch_hands_multi as _jsh
 import matplotlib.pyplot as _plt
-from utilities import uniqFN
 import datetime
 import pickle
 
@@ -101,8 +100,8 @@ strt_chg_times01  = _N.zeros(max_hands+1, dtype=_N.int)
 strt_chg_times01[strt_chg_times[0:uptohere]] = 1
 
 vs_human   = False     #  is there dynamics in the human hand selection?
-vs_NME = False   #  "AI" is perceptron or Nash_mixed_eq
-hist_dep_hands = True     #  if not_vs_human is False, whether human is history dep or not
+vs_NME = True   #  "AI" is perceptron or Nash_mixed_eq
+hist_dep_hands = False     #  if not_vs_human is False, whether human is history dep or not
 
 #   percept vs human
 #   percept vs computer (hist_dep)

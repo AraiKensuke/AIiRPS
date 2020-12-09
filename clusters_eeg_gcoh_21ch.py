@@ -4,12 +4,12 @@ import scipy.stats as _ss
 import matplotlib.pyplot as _plt
 from scipy.signal import savgol_filter
 from sklearn import mixture
-from eeg_util import unique_in_order_of_appearance, increasing_labels_mapping, rmpd_lab_trnsfrm, find_or_retrieve_GMM_labels, shift_correlated_shuffle, mtfftc
+from GCoh.eeg_util import unique_in_order_of_appearance, increasing_labels_mapping, rmpd_lab_trnsfrm, find_or_retrieve_GMM_labels, shift_correlated_shuffle, mtfftc
 import skull_plot as _sp
 import os
-import rpsms
-import preprocess_ver
-from dir_util import getResultFN
+import AIiRPS.rpsms as rpsms
+import GCoh.preprocess_ver as _ppv
+from AIiRPS.utils.dir_util import getResultFN
 
 
 import sys
@@ -54,7 +54,7 @@ _FINE1 = 3   #
 #dat     = "Apr112020_13_00_00"#"Apr312020_16_53_03"
 #dat     = "Apr242020_09_00_00"#"Apr312020_16_53_03"
 #dat     = "Apr242020_13_00_00"#"Apr312020_16_53_03"
-#dat      = "Jan082020_17_03_48"
+dat      = "Jan082020_17_03_48"
 #dat      = "Jan082020_16_56_08"
 #dat      = "Jan092020_14_55_38"
 #dat     = "Jan092020_14_00_00"#"Apr312020_16_53_03"
@@ -80,7 +80,7 @@ _FINE1 = 3   #
 #dat  = "Aug122020_13_30_23"
 #dat  = "Aug182020_13_57_26"
 #dat   = "Aug182020_15_45_27"
-dat  = "Aug182020_16_44_18"
+#dat  = "Aug182020_16_44_18"
 #dat  = "Aug182020_16_25_28"
 #dat  = "Jan012019_16_00_00"
 
@@ -95,16 +95,16 @@ manual_cluster=False
 armv_ver = 1
 gcoh_ver = 3   #  bandwidth 7 ver 1, bandwidth 5 ver 2, bandwidth 9 ver 3
 
-frngs = [[38, 45]]
+frngs = [[35, 47]]
 process_keyval_args(globals(), sys.argv[1:])
-win, slideby      = preprocess_ver.get_win_slideby(gcoh_ver)
+win, slideby      = _ppv.get_win_slideby(gcoh_ver)
 
 hlfOverlap = int((win/slideby)*0.5)
 
 
 #s = "../Neurable/DSi_dat/%(dsf)s_artfctrmvd_v%(av)d/%(dsf)s_gcoh_%(wn)d_%(sld)d_v%(av)d%(gv)d.dmp" % {"gf" : rpsm[dat], "dsf" : dat, "av" : armv_ver, "gv" : gcoh_ver, "wn" : bin, "sld" : slide}
 #print("!!!!!!!!!!   %s" % s)
-lm         = depickle("../Neurable/DSi_dat/%(dsf)s_artfctrmvd/v%(av)d/%(dsf)s_gcoh_%(wn)d_%(sld)d_v%(av)d%(gv)d.dmp" % {"gf" : rpsms.rpsm_eeg_as_key[dat], "dsf" : dat, "av" : armv_ver, "gv" : gcoh_ver, "wn" : win, "sld" : slideby})
+lm         = depickle("../DSi_dat/%(dsf)s_artfctrmvd/v%(av)d/%(dsf)s_gcoh_%(wn)d_%(sld)d_v%(av)d%(gv)d.dmp" % {"gf" : rpsms.rpsm_eeg_as_key[dat], "dsf" : dat, "av" : armv_ver, "gv" : gcoh_ver, "wn" : win, "sld" : slideby})
 # #lm         = depickle("../Neurable/DSi_dat/%(dat)s_gcoh_%(w)s_%(s)s.dmp" % {"dat" : dat, "w" : bin, "s" : slide})
 # #A_gcoh_mat = _scio.loadmat("DSi_dat/%(dat)s_gcoh_%(w)d_%(sl)d.mat" % {"dat" : dat, "w" : bin, "sl" : slide})
 # #A_gcoh     = A_gcoh_mat["Cs"]
@@ -152,7 +152,8 @@ fs = lm["fs"]
 #frngs = [[43, 49]]
 #frngs = [[40, 50]]
 #frngs = [[35, 45]]
-frngs = [[38, 45]]
+#frngs = [[38, 45]]
+frngs = [[35, 47]]
 #frngs = [[8, 12], [12, 18]]
 #frngs = [[33, 40], [34, 41], [35, 42], [36, 43], [37, 44]]
 #frngs = [[12, 18], [18, 25], [25, 35], [35, 45]]
@@ -160,11 +161,11 @@ frngs = [[38, 45]]
 #frngs = [[28, 35], [38, 45]]
 
 pcs     = _N.empty(len(frngs))
-minK    = 11
-maxK    = 12
+minK    = 6
+maxK    = 8
 try_Ks  = _N.arange(minK, maxK+1)
 #TRs      = _N.array([1, 1, 3, 5, 10, 15, 20, 25, 25])  # more tries for higher K
-TRs      = _N.array([1, 15, 20, 25, 25, 30, 40, 50, 60, 60, 60, 60, 60])  # more tries for higher K
+TRs      = _N.array([1, 15, 20, 25, 25, 30, 40, 50, 60, 60, 60, 60, 60, 60, 60])  # more tries for higher K
 #TRs      = _N.array([60])  # more tries for higher K
 
 bics = _N.ones(((maxK-minK), _N.max(TRs)))*1000000
@@ -213,7 +214,7 @@ for ich in range(len(frngs)):
         iS += len(ls)
 
     iS = 0
-    clrs  = ["black", "orange", "blue", "green", "red", "lightblue", "grey", "pink", "yellow", "brown", "cyan", "purple"]
+    clrs  = ["black", "orange", "blue", "green", "red", "lightblue", "grey", "pink", "yellow", "brown", "cyan", "purple", "black", "orange", "blue", "green", "red"]
     W   = L_gcoh
     H   = nChs
     disp_wh_ratio = 3
