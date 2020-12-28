@@ -9,11 +9,12 @@ import pickle
 
 #dats=["20Aug18-1624-01"]#, "20Aug18-1644-09", 
 #dats=["20Apr24-1650-24"]
-dats=["20Aug18-1644-09"]
+#dats=["20Aug18-1644-09"]
 #dats=["20Apr24-1650-24"]
-#dats=["20Jan09-1504-32"]#, "20Aug12-1252-50", "20Jan08-1703-13"]
+dats=["20Jan09-1504-32"]#, "20Aug12-1252-50", "20Jan08-1703-13"]
 #dats = ["20May29-1419-14", "20Jun01-0748-03", "20May29-1923-44"]
 #dats = ["20Nov22-1108-25"]#, "20Aug18-1624-01", "20Jan09-1504-32"]
+#dats = ["20Nov21-2131-38"]
 #dats = ["20Nov21-2131-38"]
 #dats = ["20Nov21-1959-30", "20Nov21-2131-38"]
 #dats = ["20Nov21-2131-38"]
@@ -24,7 +25,7 @@ expt_scores = []
 
 di = 0
 
-label=100
+label=101
 win = 40
 SHUF = 0
 scov = "WTL"
@@ -45,7 +46,7 @@ for dat in dats:
     #fig = _plt.figure(figsize=(13, 9))
     di += 1
     
-    cond_probs  = _emp.kernel_NGS(dat, kerwin=2)
+    cond_probs  = _emp.kernel_NGS(dat, kerwin=1)
 
     pklme = {}
     pklme["hnd_dat"]   = hnd_dat

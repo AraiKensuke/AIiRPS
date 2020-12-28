@@ -142,3 +142,6 @@ class multinomial_gibbs:
             lw.rpg_devroye(oo.N_vec[:, 1], B2wn+o_w2, out=ws2)
 
             ws2[zr2] = 1e-20#1e-20
+
+        print(smp_F0s[:, 0])
+        print(smp_F0s[:, 1])

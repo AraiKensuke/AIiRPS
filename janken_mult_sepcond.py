@@ -8,7 +8,7 @@ import matplotlib.pyplot as _plt
 import os
 import sys
 import AIiRPS.models.labels as labels
-from cmdlineargs import process_keyval_args
+from cmdlineargs.cmdlineargs import process_keyval_args
 import AIiRPS.models.multinomial_gibbs as _mg
 
 from AIiRPS.utils.dir_util import getResultFN
@@ -55,11 +55,14 @@ _ME_WTL = 0
 _RELATIVE_LAST_ME = 1    #  what to use as a comparison for when player switches
 
 smp_every = 50
-ITER = 35000
-it0  = 31000
-it1  = 35000
+# ITER = 35000
+# it0  = 31000
+# it1  = 35000
+ITER = 20000
+it0  = 15000
+it1  = 20000
 
-label=5
+label=11
 #  priors for inv gamma   #  B/(a+1)
 
 rndmz = False
@@ -95,11 +98,11 @@ dat_fn      = "20Jan09-1504-32"
 #dat_fn="20Dec05-0913-27"
 #dat_fn="20Dec05-0950-54"
 
-random_walk = True
+random_walk = False
 flip_human_AI=False
 #########################################
 process_keyval_args(globals(), sys.argv[1:])
-a_q2, B_q2 = labels.get_a_B(label)
+a_q2, B_q2, a_F0, b_F0 = labels.get_a_B_aF0_bF0(label)
 
 scov = "WTL"
 ssig = "ME"
@@ -181,6 +184,9 @@ N     = 1   #  # of events observed, and distributed across K choices
 
 y_all = _N.empty(len(conds[0]) + len(conds[1]) + len(conds[2]), dtype=_N.int)
 
+smp_q2s     = _N.empty((ITER, 6))
+smp_F0s     = _N.empty((ITER, 6))
+
 for cond in range(3):
     thecond = conds[cond]
     Tm1     = len(thecond)
@@ -219,8 +225,6 @@ for cond in range(3):
 
     smp_offsets = _N.empty((2, ITER))
     smp_Bns     = _N.empty((2, ITER, Tm1))
-    smp_q2s     = _N.empty((ITER, 6))
-    smp_F0s     = _N.empty((ITER, 6))
 
     #####################  THE GIBBS SAMPLING DONE HERE
     gb_sampler = _mg.multinomial_gibbs(N, K, N_vec, kappa, Tm1)

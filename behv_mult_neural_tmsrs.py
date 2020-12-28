@@ -59,7 +59,7 @@ dat     = "Jan092020_15_05_39"#"Apr312020_16_53_03"
 #dat  = "Aug122020_13_30_23"
 dat   = "Aug182020_15_45_27"
 #dat  = "Aug122020_12_52_44"
-# dat      = "Jan082020_17_03_48"
+dat      = "Jan082020_17_03_48"
 
 #dat   = "Aug182020_16_25_28"
 #dat  = "May142020_23_16_34"   #  35 seconds    #  15:04:32
@@ -199,7 +199,7 @@ fp = open("%(od)s/corr_out" % {"od" : outdir}, "w")
 
 summary = {}
 
-lags_sec=8
+lags_sec=12
 slideby_sec = slideby/300
 xticksD = [-20, -10, 0, 10, 20]
 lags = int(lags_sec / slideby_sec)+1  #  (slideby/300)*lags

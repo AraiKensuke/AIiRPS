@@ -7,7 +7,7 @@ import matplotlib.pyplot as _plt
 import AIiRPS.utils.read_taisen as _rd
 from filter import gauKer
 from scipy.signal import savgol_filter
-from GCoh.eeg_util import unique_in_order_of_appearance, increasing_labels_mapping, rmpd_lab_trnsfrm, find_or_retrieve_GMM_labels, shift_correlated_shuffle, mtfftc
+from GCoh.eeg_util import unique_in_order_of_appearance, increasing_labels_mapping, rmpd_lab_trnsfrm, find_or_retrieve_GMM_labels, shift_correlated_shuffle, shuffle_discrete_contiguous_regions, mtfftc
 import AIiRPS.skull_plot as _sp
 import os
 import sys
@@ -20,7 +20,7 @@ import AIiRPS.rpsms as rpsms
 import GCoh.preprocess_ver as _ppv
 
 from AIiRPS.utils.dir_util import getResultFN
-
+import GCoh.datconfig as datconf
 
 __1st__ = 0
 __2nd__ = 1
@@ -53,11 +53,11 @@ def depickle(s):
 
 #dat  = "Aug182020_16_44_18"
 
-#dat     = "Jan092020_15_05_39"#"Apr312020_16_53_03"
+dat     = "Jan092020_15_05_39"#"Apr312020_16_53_03"
 #dat  = "Aug122020_13_30_23"
 #dat   = "Aug182020_15_45_27"
 #dat  = "Aug122020_12_52_44"
-dat      = "Jan082020_17_03_48"
+#dat      = "Jan082020_17_03_48"
 
 #dat   = "Aug182020_16_25_28"
 #dat  = "May142020_23_16_34"   #  35 seconds    #  15:04:32
@@ -67,7 +67,7 @@ fnt_tck = 15
 fnt_lbl = 17
 
 rpsm_key = rpsms.rpsm_eeg_as_key[dat]
-armv_ver = 1
+armv_ver = 4
 gcoh_ver =3
 
 manual_cluster = False
@@ -83,26 +83,28 @@ gk_std = 1
 gk = gauKer(gk_std)
 gk /= _N.sum(gk)
 show_shuffled = False
-rvrs   = False
-
 process_keyval_args(globals(), sys.argv[1:])
 ######################################################3
 
 
-srvrs = "_revrsd" if rvrs else ""
+
 sshf        = "_sh" if show_shuffled else ""
-rpsmdir     = getResultFN(dat)
-pikdir     = getResultFN("%(dir)s/v%(av)d%(gv)d" % {"dir" : dat, "av" : armv_ver, "gv" : gcoh_ver})
-outdir     = pikdir
+
+
+pikdir     = datconf.getResultFN(datconf._RPS, "%(dir)s/v%(av)d%(gv)d" % {"dir" : dat, "av" : armv_ver, "gv" : gcoh_ver})
+label          = 5
+outdir         = "%(pd)s/%(lb)d" % {"pd" : pikdir, "lb" : label}
 
 print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 print("stop_early %d" % stop_early)
 print("t_offset %d" % t_offset)
 print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 
-print("%(od)s/%(rk)s_%(w)d_%(s)d_pkld_dat_v%(av)d%(gv)d.dmp" % {"rk" : rpsm_key, "w" : win, "s" : slideby, "av" : armv_ver, "gv" : gcoh_ver, "od" : pikdir})
+print("%(od)s/%(rk)s_%(w)d_%(s)d_pkld_dat_v%(av)d%(gv)d_%(lb)d.dmp" % {"rk" : rpsm_key, "w" : win, "s" : slideby, "av" : armv_ver, "gv" : gcoh_ver, "od" : pikdir, "lb" : label})
 lm       = depickle("%(od)s/%(rk)s_%(w)d_%(s)d_pkld_dat_v%(av)d%(gv)d.dmp" % {"rk" : rpsm_key, "w" : win, "s" : slideby, "av" : armv_ver, "gv" : gcoh_ver, "od" : pikdir})
 
+if not os.access(outdir, os.F_OK):
+     os.mkdir(outdir)
 
 s_offset = "off%d_" % t_offset if t_offset != 0 else ""
 win_gcoh      = lm["win_gcoh"]
@@ -140,8 +142,28 @@ _behv_sigs   = _N.sum(_behv_sigs_all[use_behv], axis=0)
 #_behv_sigs   = _behv_sigs_all[0]
 
 _bigchg_behv_sigs    = _behv_sigs[0:_behv_sigs.shape[0]-stop_early]
-if rvrs:
-     bigchg_behv_sigs = _N.array(_behv_sigs[::2].tolist() + _behv_sigs[1::2].tolist())[::-1]
+hlfL = _bigchg_behv_sigs.shape[0]//2
+
+
+
+rvrs = False
+hlfs_intrchg = False
+#srvrs = "_revrsd" if rvrs else ""
+srvrs = ""#
+
+if rvrs and hlfs_intrchg:
+     srvrs = "_hi_revrsd"
+elif rvrs and not hlfs_intrchg:
+     srvrs = "_revrsd"
+elif not rvrs and hlfs_intrchg:
+     srvrs = "_hi"
+
+if rvrs and not hlfs_intrchg:
+     bigchg_behv_sigs = _N.array(_behv_sigs[::-1])
+elif not rvrs and hlfs_intrchg:
+     bigchg_behv_sigs = _N.array(_behv_sigs[hlfL:].tolist() + _behv_sigs[0:hlfL].tolist())
+elif rvrs and hlfs_intrchg:
+     bigchg_behv_sigs = _N.array(_N.array(_behv_sigs[hlfL:].tolist() + _behv_sigs[0:hlfL].tolist())[::-1])
 else:
      bigchg_behv_sigs    = _bigchg_behv_sigs
 #bigchg_behv_sigs    = _bigchg_behv_sigs[::-1] if rvrs else _bigchg_behv_sigs
@@ -182,17 +204,17 @@ fs_spec = lm["fs_spectrograms"]
 #frngs = [[25, 30]]
 #frngs = [[40, 50]]
 #frngs = [[38, 45]]
-#frngs = [[12, 18]]
+#frngs = [[15, 25]]
 #frngs = [[35, 45]]
 #frngs = [[20, 30]]
 
-#frngs  = [[15, 22]]
+#frngs  = [[10, 18]]
 
-frngs = [[35, 47]]
-#frngs = [[38, 45]]
-#frngs  = [[35, 40]]
+#frngs = [[35, 47]]
+frngs = [[32, 48]]
+#frngs  = [[38, 50]]
 #frngs =[[30, 35]]
-#frngs = [[20, 35]]
+#frngs = [[25, 35]]
 #frngs = [[30, 38]]
 #frngs = [[34, 41], [33, 40], [35, 42], [36, 43]]
 #frngs = [[18, 25]]
@@ -210,15 +232,13 @@ fi = 0
 
 pl_num      = -1
 
-fp = open("%(od)s/corr_out" % {"od" : outdir}, "w")
-
 summary = {}
 
 lags_sec=30
 slideby_sec = slideby/300
 xticksD = [-20, -10, 0, 10, 20]
 lags = int(lags_sec / slideby_sec)+1  #  (slideby/300)*lags
-SHFLS= 50
+SHFLS= 100
 local_shf_win = 60   #  number gcoh samples  // L_gcoh//local_shf_win ~ 23 seconds
 
 sections = 6
@@ -233,7 +253,15 @@ all_localmins = []
 all_localthemaxs = []
 all_localthemins = []
 all_xcs       = []
-all_xcs_r       = []
+#all_xcs_r       = []
+
+# all_xcs_r2       = []
+# all_xcs_r3       = []
+# all_xcs_r4       = []
+# all_xcs_r5       = []
+# all_xcs_r6       = []
+# all_xcs_r7       = []
+
 all_acs       = []
 all_shps      = []
 
@@ -243,8 +271,6 @@ for frng in frngs:
      fi += 1
      fL = frng[0]#
      fH = frng[1]
-
-     fp.write("*************** doing %(fL)d  %(fH)d\n" % {"fL" : fL, "fH" : fH})
 
      irngs = _N.where((fs_spec > fL) & (fs_spec < fH))[0]
      sL    = irngs[0]
@@ -261,10 +287,11 @@ for frng in frngs:
      TRs      = _N.array([1, 4, 10, 20, 30, 40, 50, 60, 70])  # more tries for higher K
 
 
-     nStates, _rmpd_lab = find_or_retrieve_GMM_labels(dat, "%(gf)s_gcoh%(evn)d_%(w)d_%(s)d_v%(av)d%(gv)d" % {"gf" : dat, "w" : win, "s" : slideby, "av" : armv_ver, "gv" : gcoh_ver, "evn" : ev_n}, real_evs[ev_n], iL, iH, fL, fH, armv_ver, gcoh_ver, which=0, try_K=try_Ks, TRs=TRs, manual_cluster=manual_cluster, ignore_stored=ignore_stored, do_pca=True, min_var_expld=0.95)
+     nStates, _rmpd_lab = find_or_retrieve_GMM_labels(datconf._RPS, dat, "%(gf)s_gcoh%(evn)d_%(w)d_%(s)d_v%(av)d%(gv)d" % {"gf" : dat, "w" : win, "s" : slideby, "av" : armv_ver, "gv" : gcoh_ver, "evn" : ev_n}, real_evs[ev_n], iL, iH, fL, fH, armv_ver, gcoh_ver, which=0, try_K=try_Ks, TRs=TRs, manual_cluster=manual_cluster, ignore_stored=ignore_stored, do_pca=True, min_var_expld=0.95)
 
      stateBin          = _N.zeros(L_gcoh, dtype=_N.int)
 
+     all_xcs_r  = _N.empty((nStates, sections, SHFLS+1, 2*lags+1))
      hlfOverlap = 1#int((win/slideby)*0.5)
      sss = _N.empty(SHFLS+1)
 
@@ -297,9 +324,9 @@ for frng in frngs:
      time_lags = _N.linspace(-(slideby/300)*lags, lags*(slideby/300), 2*lags+1)
      for ns in range(nStates):
           for shf in range(SHFLS+1):
-               #rmpd_lab = shift_correlated_shuffle(_rmpd_lab, low=2, high=4, local_shuffle=True, local_shuffle_pcs=(L_gcoh//local_shf_win)) if shf > 0 else _rmpd_lab
-               #rmpd_lab = shift_correlated_shuffle(_rmpd_lab, low=2, high=4, local_shuffle=True, local_shuffle_pcs=(4*sections)) if shf > 0 else _rmpd_lab
-               rmpd_lab = shift_correlated_shuffle(_rmpd_lab, low=2, high=4, local_shuffle=True, local_shuffle_pcs=(2*sections)) if shf > 0 else _rmpd_lab
+               rmpd_lab = shift_correlated_shuffle(_rmpd_lab, low=int(win/slideby-1), high=int(win/slideby+1), local_shuffle=True, local_shuffle_pcs=(2*sections)) if shf > 0 else _rmpd_lab
+               #rmpd_lab = shuffle_discrete_contiguous_regions(_rmpd_lab, local_shuffle=True, local_shuffle_pcs=(2*sections)) if shf > 0 else _rmpd_lab
+
                stateInds = _N.where(rmpd_lab == ns)[0]
 
                stateBin[:] = 0
@@ -354,7 +381,6 @@ for frng in frngs:
                #_plt.plot(time_lags, xcs[hlf, 0], marker=".", ms=2, color="black", lw=1)
                _plt.plot(time_lags, xcs[hlf, 0], marker=".", ms=2, color="black", lw=1)
                shp_on = _N.where(stateBin[i0:i1] == 1)[0]
-               print(len(shp_on))
                _plt.scatter(xs[shp_on], _N.ones(shp_on.shape[0])*-0.3, color="red", s=4)
 
                srtd = _N.sort(xcs[hlf, 1:], axis=0)
@@ -389,8 +415,18 @@ for frng in frngs:
                _plt.title(len(shp_on))
           #pc, pv = _ss.pearsonr(xcs[0, 0, lags//2:2*lags-1-lags//2], xcs[1, 0, lags//2:2*lags-1-lags//2])
           #print("state %(ns)d  pc %(pc).3f" % {"ns" : ns, "pc" : pc})
+          # all_xcs.append(_N.array(xcs[:, 0]))
           all_xcs.append(_N.array(xcs[:, 0]))
-          all_xcs_r.append(_N.array(xcs[:, 1]))
+
+          #all_xcs_r.append(_N.array(xcs[:, 1:51]))
+          all_xcs_r[ns, :, 1:SHFLS+1] = xcs[:, 1:]
+          # all_xcs_r2.append(_N.array(xcs[:, 2]))
+          # all_xcs_r3.append(_N.array(xcs[:, 3]))
+          # all_xcs_r4.append(_N.array(xcs[:, 4]))
+          # all_xcs_r5.append(_N.array(xcs[:, 5]))
+          # all_xcs_r6.append(_N.array(xcs[:, 4]))
+          # all_xcs_r7.append(_N.array(xcs[:, 5]))
+
           #all_shps.append(_N.array(shps))
           all_shps.append(_N.array(number_state_obsvd))
      #all_xcs.append(xc_this_state)
@@ -401,16 +437,22 @@ for frng in frngs:
           scov += covs[use_behv[ub]] + ","
      scov += covs[use_behv[-1]]
      fig.subplots_adjust(wspace=0.4, hspace=0.3, left=0.08, bottom=0.12)
-     _plt.savefig("%(od)s/xcorr_out_%(evn)d_%(w)d_%(sl)d_%(1)d_%(2)d_v%(av)d%(gv)d_%(ub)s_%(sr)s" % {"1" : fL, "2" : fH, "dat" : dat, "w" : win, "sl" : slideby, "av" : armv_ver, "gv" : gcoh_ver, "od" : outdir, "evn" : ev_n, "sr" : srvrs, "ub" : scov}, transparent=True)
+     _plt.savefig("%(od)s/xcorr_out_%(evn)d_%(w)d_%(sl)d_%(1)d_%(2)d_v%(av)d%(gv)d_%(lb)d_%(ub)s_%(sr)s" % {"1" : fL, "2" : fH, "dat" : dat, "w" : win, "sl" : slideby, "av" : armv_ver, "gv" : gcoh_ver, "od" : outdir, "evn" : ev_n, "sr" : srvrs, "ub" : scov, "lb" : label}, transparent=True)
 
      pickle_put = {}
      pickle_put["all_xcs"] = all_xcs
      pickle_put["all_xcs_r"] = all_xcs_r
+     # pickle_put["all_xcs_r2"] = all_xcs_r2
+     # pickle_put["all_xcs_r3"] = all_xcs_r3
+     # pickle_put["all_xcs_r4"] = all_xcs_r4
+     # pickle_put["all_xcs_r5"] = all_xcs_r5
+     # pickle_put["all_xcs_r6"] = all_xcs_r6
+     # pickle_put["all_xcs_r7"] = all_xcs_r7
      pickle_put["all_shps"] = all_shps
      pickle_put["time_lags"] = time_lags
      print("*************************xcorr_out")
      print("%(od)s/xcorr_out_%(evn)d_%(w)d_%(sl)d_%(1)d_%(2)d_v%(av)d%(gv)d%(sr)s.dmp" % {"1" : fL, "2" : fH, "dat" : dat, "w" : win, "sl" : slideby, "av" : armv_ver, "gv" : gcoh_ver, "od" : outdir, "evn" : ev_n, "sr" : srvrs})
-     dmp = open("%(od)s/xcorr_out_%(evn)d_%(w)d_%(sl)d_%(1)d_%(2)d_v%(av)d%(gv)d%(sr)s.dmp" % {"1" : fL, "2" : fH, "dat" : dat, "w" : win, "sl" : slideby, "av" : armv_ver, "gv" : gcoh_ver, "od" : outdir, "evn" : ev_n, "sr" : srvrs}, "wb")
+     dmp = open("%(od)s/xcorr_out_%(evn)d_%(w)d_%(sl)d_%(1)d_%(2)d_v%(av)d%(gv)d_%(lb)d%(sr)s.dmp" % {"1" : fL, "2" : fH, "dat" : dat, "w" : win, "sl" : slideby, "av" : armv_ver, "gv" : gcoh_ver, "od" : outdir, "evn" : ev_n, "sr" : srvrs, "lb" : label}, "wb")
      pickle.dump(pickle_put, dmp, -1)
      dmp.close()
 
@@ -437,8 +479,6 @@ for frng in frngs:
      fL = frng[0]#
      fH = frng[1]
 
-     fp.write("*************** doing %(fL)d  %(fH)d\n" % {"fL" : fL, "fH" : fH})
-
      irngs = _N.where((fs_spec > fL) & (fs_spec < fH))[0]
      sL    = irngs[0]
      sH    = irngs[-1]    
@@ -454,7 +494,7 @@ for frng in frngs:
      TRs      = _N.array([1, 4, 10, 20, 30, 40, 50, 60, 70])  # more tries for higher K
 
      
-     nStates, _rmpd_lab = find_or_retrieve_GMM_labels(dat, "%(gf)s_gcoh%(evn)d_%(w)d_%(s)d_v%(av)d%(gv)d" % {"gf" : dat, "w" : win, "s" : slideby, "av" : armv_ver, "gv" : gcoh_ver, "evn" : ev_n}, real_evs[ev_n], iL, iH, fL, fH, armv_ver, gcoh_ver, which=0, try_K=try_Ks, TRs=TRs, manual_cluster=manual_cluster, ignore_stored=ignore_stored, do_pca=True, min_var_expld=0.95)
+     nStates, _rmpd_lab = find_or_retrieve_GMM_labels(datconf._RPS, dat, "%(gf)s_gcoh%(evn)d_%(w)d_%(s)d_v%(av)d%(gv)d" % {"gf" : dat, "w" : win, "s" : slideby, "av" : armv_ver, "gv" : gcoh_ver, "evn" : ev_n}, real_evs[ev_n], iL, iH, fL, fH, armv_ver, gcoh_ver, which=0, try_K=try_Ks, TRs=TRs, manual_cluster=manual_cluster, ignore_stored=ignore_stored, do_pca=True, min_var_expld=0.95)
 
      stateBin          = _N.zeros(L_gcoh, dtype=_N.int)
 
@@ -510,12 +550,12 @@ for frng in frngs:
           all_acs.append(ac_this_state)
 
      fig.subplots_adjust(wspace=0.4, hspace=0.3, left=0.08, bottom=0.12)
-     _plt.savefig("%(od)s/acorr_out_%(evn)d_%(w)d_%(sl)d_%(1)d_%(2)d_v%(av)d%(gv)d%(sr)s" % {"1" : fL, "2" : fH, "dat" : dat, "w" : win, "sl" : slideby, "av" : armv_ver, "gv" : gcoh_ver, "od" : outdir, "evn" : ev_n, "sr" : srvrs}, transparent=True)
+     _plt.savefig("%(od)s/acorr_out_%(evn)d_%(w)d_%(sl)d_%(1)d_%(2)d_v%(av)d%(gv)d_%(lb)d%(sr)s" % {"1" : fL, "2" : fH, "dat" : dat, "w" : win, "sl" : slideby, "av" : armv_ver, "gv" : gcoh_ver, "od" : outdir, "evn" : ev_n, "sr" : srvrs, "lb" : label}, transparent=True)
 
      pickle_put = {}
      pickle_put["all_acs"] = all_acs
      pickle_put["time_lags"] = time_lags
 
-     dmp = open("%(od)s/acorr_out_%(evn)d_%(w)d_%(sl)d_%(1)d_%(2)d_v%(av)d%(gv)d%(sr)s.dmp" % {"1" : fL, "2" : fH, "dat" : dat, "w" : win, "sl" : slideby, "av" : armv_ver, "gv" : gcoh_ver, "od" : outdir, "evn" : ev_n, "sr" : srvrs}, "wb")
+     dmp = open("%(od)s/acorr_out_%(evn)d_%(w)d_%(sl)d_%(1)d_%(2)d_v%(av)d%(gv)d_%(lb)d%(sr)s.dmp" % {"1" : fL, "2" : fH, "dat" : dat, "w" : win, "sl" : slideby, "av" : armv_ver, "gv" : gcoh_ver, "od" : outdir, "evn" : ev_n, "sr" : srvrs, "lb" : label}, "wb")
      pickle.dump(pickle_put, dmp, -1)
      dmp.close()

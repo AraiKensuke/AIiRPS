@@ -48,10 +48,19 @@ def depickle(s):
 #dats = {"20Jan09-1504-32" : ["Jan092020_15_05_39", "gcoh_256_256", "12:00:00", "12:00:00", 0, None, 6, [_CHG_WTL1, _CHG_WTL2, _CHG_WTL3, _LTP_WTL1, _LTP_WTL2, _LTP_WTL3, _BTP_WTL1, _BTP_WTL2, _BTP_WTL3], 5, 4, 3],
 #dats = {"20Jan09-1504-32" : ["Jan092020_15_05_39", "gcoh_256_256", "12:00:00", "12:00:00", 0, None, 6, 6, 6, 6, 6, 6, 5, 4, 2],
 #dats = {"20Jan09-1504-32" : ["Jan092020_15_05_39", "gcoh_256_64", "12:00:00", "12:00:00", 0, None, 6, 6, 6, 6, 6, 6, 5, 4, 3],
+"""
+time RPS  (same time)
+time EEG  (same time)
+label
+armv_ver
+GCoh_ver
+savgol_win
+"""
 dats = {"20Jan09-1504-32" : ["12:00:00", "12:00:00", 5, 4, 3, 5],
+        #"20Jan09-1504-32" : ["12:00:00", "12:00:00", 5, 4, 3, 5],
         "20Aug18-1624-01" : ["12:00:00", "12:00:01", 100, 1, 3, 5],
         "20Jan08-1703-13" : ["12:00:00", "12:00:01", 5, 1, 3, 5],
-        "20Aug18-1644-09" : ["12:00:00", "12:00:01", 100, 1, 3, 5],
+        "20Aug18-1644-09" : ["12:00:00", "12:00:01", 101, 1, 10, 5],
         "20Aug18-1546-13" : ["12:00:00", "12:00:01", 5, 1, 3, 5],
         "20Aug18-1603-42" : ["12:00:00", "12:00:01", 8, 1, 3, 5],
         "20Aug12-1252-50" : ["12:00:00", "12:00:01", 5, 1, 3, 5],
@@ -348,25 +357,25 @@ als
     dat_pkg["slide_spec"]           = slideby_spec
 
 
-    return savedir, dat_pkg, win_gcoh, slideby_gcoh, armv_ver, gcoh_ver
+    return savedir, dat_pkg, win_gcoh, slideby_gcoh, armv_ver, gcoh_ver, label
 
 #  THESE KEYS ARE RPS GAME DATA NAMES
 #for rpsm_key in ["20Jan08-1703-13"]:
 #for rpsm_key in ["20Jan09-1504-32"]:
 #for rpsm_key in ["20Aug12-1331-06"]:
+for rpsm_key in ["20Jan09-1504-32"]:
 #for rpsm_key in ["20Aug12-1252-50", "20Jan09-1504-32", "20Aug18-1644-09", "20Aug18-1624-01", "20Aug12-1331-06"]:
-#for rpsm_key in ["20Aug12-1252-50", "20Jan09-1504-32", "20Aug18-1644-09", "20Aug18-1624-01", "20Aug12-1331-06"]:
-for rpsm_key in ["20Jan08-1703-13", "20Jan09-1504-32", "20Aug12-1252-50", "20Aug12-1331-06", "20Aug18-1546-13"]:
+#for rpsm_key in ["20Jan08-1703-13"]:#, "20Jan09-1504-32", "20Aug12-1252-50", "20Aug12-1331-06", "20Aug18-1546-13"]:
 #for rpsm_key in ["20Aug12-1252-50"]:
 #for rpsm_key in ["20Aug18-1644-09"]:
 #for rpsm_key in ["20Aug18-1546-13"]:
 #for rpsm_key in ["20Aug18-1603-42"]:
 #for rpsm_key in ["20Aug18-1624-01"]:
-    savedir, dat_pkg, win_gcoh, slideby_gcoh, armv_ver, gcoh_ver = pkg_all_data(rpsm_key)  #  first nperseg/2 points are constant
+    savedir, dat_pkg, win_gcoh, slideby_gcoh, armv_ver, gcoh_ver, label = pkg_all_data(rpsm_key)  #  first nperseg/2 points are constant
     #pkg_all_data(rpsm_key)  #  first nperseg/2 points are constant
 
 
-    dmp = open("%(sd)s/%(rk)s_%(w)d_%(s)d_pkld_dat_v%(av)d%(gv)d.dmp" % {"rk" : rpsm_key, "w" : win_gcoh, "s" : slideby_gcoh, "av" : armv_ver, "gv" : gcoh_ver, "sd" : savedir}, "wb")
+    dmp = open("%(sd)s/%(rk)s_%(w)d_%(s)d_pkld_dat_v%(av)d%(gv)d_%(lb)d.dmp" % {"rk" : rpsm_key, "w" : win_gcoh, "s" : slideby_gcoh, "av" : armv_ver, "gv" : gcoh_ver, "sd" : savedir, "lb" : label}, "wb")
          
 
     pickle.dump(dat_pkg, dmp, -1)
