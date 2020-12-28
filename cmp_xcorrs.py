@@ -51,7 +51,7 @@ key_dats = ["Jan092020_15_05_39"]
 
 armv_ver = 4
 gcoh_ver =3
-label    = 101
+label    = 5
 
 win, slideby      = _ppv.get_win_slideby(gcoh_ver)
 
@@ -87,7 +87,7 @@ gk = gauKer(2)
 ch_w_CM, rm_chs, list_ch_names, ch_types = datconf.getConfig(datconf._RPS)
 arr_ch_names = _N.array(list_ch_names)
 
-for dat_mod in [[False, False]]:#, [True, False], [False, True], [True, True]]:
+for dat_mod in [[False, False], [True, False], [False, True], [True, True]]:
      rvrs   = dat_mod[0]
      hlfs_intrchg=dat_mod[1]
 
@@ -113,7 +113,7 @@ for dat_mod in [[False, False]]:#, [True, False], [False, True], [True, True]]:
          outdir     = getResultFN("%(dir)s/v%(vs)s/%(lb)d" % {"dir" : key, "vs" : vs, "lb" : label})
 
          lmBhv  = depickle("%(od)s/%(rk)s_%(w)d_%(s)d_pkld_dat_v%(vs)s_%(lb)d.dmp" % {"rk" : rpsms.rpsm_eeg_as_key[key], "w" : win, "s" : slideby, "vs" : vs, "od" : pikdir, "lb" : label})
-         lmXCr = depickle("%(pkd)s/xcorr_out_0_%(w)d_%(sb)d_%(f1)s_%(f2)s_v%(vs)s%(rv)s.dmp" % {"pkd" : outdir, "vs" : vs, "f1" : f1, "f2" : f2, "w" : win, "sb" : slideby, "rv" : srvrs})
+         lmXCr = depickle("%(pkd)s/xcorr_out_0_%(w)d_%(sb)d_%(f1)s_%(f2)s_v%(vs)s_%(lb)d%(rv)s.dmp" % {"pkd" : outdir, "vs" : vs, "f1" : f1, "f2" : f2, "w" : win, "sb" : slideby, "rv" : srvrs, "lb" : label})
 
          lmEEG         = depickle(datconf.getDataFN(datconf._RPS, "%(dsf)s_artfctrmvd/v%(av)d/%(dsf)s_gcoh_%(wn)d_%(sld)d_v%(av)d%(gv)d.dmp" % {"dsf" : key, "av" : armv_ver, "gv" : gcoh_ver, "wn" : win, "sld" : slideby}))
 
@@ -146,10 +146,7 @@ for dat_mod in [[False, False]]:#, [True, False], [False, True], [True, True]]:
               max_near_midp = {}
               min_near_midp = {}
 
-              if rndmz == 0:
-                   xcs = lmXCr["all_xcs"]
-              else:
-                   xcs = all_xcs_r[:, :, rndmz]
+              xcs = all_xcs_r[:, :, rndmz]
                    #xcs = lmXCr["all_xcs_r%d" % ir]
               #xcs = lmXCr["all_xcs_r"] if rndmz else lmXCr["all_xcs"]
               all_shps = _N.array(lmXCr["all_shps"])
@@ -263,6 +260,9 @@ for dat_mod in [[False, False]]:#, [True, False], [False, True], [True, True]]:
                    mn_maxs[rndmz] = 0
                    mn_mins[rndmz] = 0
                    min_max_corr[rndmz] = 0
+                   pc, pv = 0, 1
+                   maxy = 0
+                   miny = 0
 
 
               if ir < 8:
