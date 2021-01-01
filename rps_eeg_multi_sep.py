@@ -56,13 +56,13 @@ armv_ver
 GCoh_ver
 savgol_win
 """
-dats = {"20Jan09-1504-32" : ["12:00:00", "12:00:00", 5, 4, 3, 5],
+dats = {"20Jan09-1504-32" : ["12:00:00", "12:00:00", 8, 4, 3, 5],
         #"20Jan09-1504-32" : ["12:00:00", "12:00:00", 5, 4, 3, 5],
         "20Aug18-1624-01" : ["12:00:00", "12:00:01", 100, 1, 3, 5],
+        "20Aug18-1603-42" : ["12:00:00", "12:00:01", 8, 1, 3, 5],
         "20Jan08-1703-13" : ["12:00:00", "12:00:01", 5, 1, 3, 5],
         "20Aug18-1644-09" : ["12:00:00", "12:00:01", 101, 1, 10, 5],
         "20Aug18-1546-13" : ["12:00:00", "12:00:01", 5, 1, 3, 5],
-        "20Aug18-1603-42" : ["12:00:00", "12:00:01", 8, 1, 3, 5],
         "20Aug12-1252-50" : ["12:00:00", "12:00:01", 5, 1, 3, 5],
         "20Aug12-1331-06" : ["12:00:00", "12:00:01", 5, 1, 3, 5]
 }
@@ -140,7 +140,7 @@ als
     armv_ver = dats[rpsm_key][3]
     gcoh_ver = dats[rpsm_key][4]
 
-    win_spec, slideby_spec      = _ppv.get_win_slideby(gcoh_ver)
+    win_spec, slideby_spec, dpss_bw      = _ppv.get_win_slideby(gcoh_ver)
     win_gcoh        = win_spec
     slideby_gcoh    = slideby_spec
 
@@ -280,7 +280,7 @@ als
          gcoh_lm         = depickle("../DSi_dat/%(dsf)s_artfctrmvd/v%(av)d/%(dsf)s_%(gf)s_v%(av)d%(gv)d.dmp" % {"gf" : gcoh_fn, "dsf" : dsi_fn, "av" : armv_ver, "gv" : gcoh_ver})
 
     if not os.access(getResultFN("%(dsf)s" % {"dsf" : dsi_fn}), os.F_OK):
-         os.mkdir("Results/%(dsf)s" % {"dsf" : dsi_fn})
+         os.mkdir(getResultFN("%(dsf)s" % {"dsf" : dsi_fn}))
     savedir = getResultFN("%(dsf)s/v%(av)d%(gv)d" % {"gf" : gcoh_fn, "dsf" : dsi_fn, "av" : armv_ver, "gv" : gcoh_ver})
     if not os.access(savedir, os.F_OK):
          os.mkdir(savedir)
@@ -363,14 +363,15 @@ als
 #for rpsm_key in ["20Jan08-1703-13"]:
 #for rpsm_key in ["20Jan09-1504-32"]:
 #for rpsm_key in ["20Aug12-1331-06"]:
-for rpsm_key in ["20Jan09-1504-32"]:
+#for rpsm_key in ["20Jan09-1504-32"]:
 #for rpsm_key in ["20Aug12-1252-50", "20Jan09-1504-32", "20Aug18-1644-09", "20Aug18-1624-01", "20Aug12-1331-06"]:
-#for rpsm_key in ["20Jan08-1703-13"]:#, "20Jan09-1504-32", "20Aug12-1252-50", "20Aug12-1331-06", "20Aug18-1546-13"]:
+#for rpsm_key in ["20Jan08-1703-13"]:#, "20Jan09-1504-32", "20Aug12-1252-50", "2Aug12-1331-06", "20Aug18-1546-13"]:
 #for rpsm_key in ["20Aug12-1252-50"]:
 #for rpsm_key in ["20Aug18-1644-09"]:
 #for rpsm_key in ["20Aug18-1546-13"]:
 #for rpsm_key in ["20Aug18-1603-42"]:
 #for rpsm_key in ["20Aug18-1624-01"]:
+for rpsm_key in ["20Aug18-1603-42"]:
     savedir, dat_pkg, win_gcoh, slideby_gcoh, armv_ver, gcoh_ver, label = pkg_all_data(rpsm_key)  #  first nperseg/2 points are constant
     #pkg_all_data(rpsm_key)  #  first nperseg/2 points are constant
 

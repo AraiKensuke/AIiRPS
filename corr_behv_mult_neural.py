@@ -53,7 +53,8 @@ def depickle(s):
 
 #dat  = "Aug182020_16_44_18"
 
-dat     = "Jan092020_15_05_39"#"Apr312020_16_53_03"
+#dat     = "Jan092020_15_05_39"#"Apr312020_16_53_03"
+dat     = "Aug182020_16_02_49"
 #dat  = "Aug122020_13_30_23"
 #dat   = "Aug182020_15_45_27"
 #dat  = "Aug122020_12_52_44"
@@ -67,13 +68,13 @@ fnt_tck = 15
 fnt_lbl = 17
 
 rpsm_key = rpsms.rpsm_eeg_as_key[dat]
-armv_ver = 4
+armv_ver = 1
 gcoh_ver =3
 
 manual_cluster = False
 
 Fs=300
-win, slideby      = _ppv.get_win_slideby(gcoh_ver)
+win, slideby, dpss_bw      = _ppv.get_win_slideby(gcoh_ver)
 
 t_offset = 0  #  ms offset behv_sig_ts
 stop_early   = 0#180
@@ -92,7 +93,7 @@ sshf        = "_sh" if show_shuffled else ""
 
 
 pikdir     = datconf.getResultFN(datconf._RPS, "%(dir)s/v%(av)d%(gv)d" % {"dir" : dat, "av" : armv_ver, "gv" : gcoh_ver})
-label          = 5
+label          = 8
 outdir         = "%(pd)s/%(lb)d" % {"pd" : pikdir, "lb" : label}
 
 print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
@@ -191,7 +192,8 @@ TRs      = _N.array([1, 4, 10, 20, 30, 40, 50, 60, 70])  # more tries for higher
 
 nStates, _rmpd_lab = find_or_retrieve_GMM_labels(datconf._RPS, dat, "%(gf)s_gcoh%(evn)d_%(w)d_%(s)d_v%(av)d%(gv)d" % {"gf" : dat, "w" : win, "s" : slideby, "av" : armv_ver, "gv" : gcoh_ver, "evn" : ev_n}, real_evs[ev_n], iL, iH, fL, fH, armv_ver, gcoh_ver, which=0, try_K=try_Ks, TRs=TRs, manual_cluster=manual_cluster, ignore_stored=ignore_stored, do_pca=True, min_var_expld=0.95)
 
-for dat_mod in [[False, False], [True, False], [False, True], [True, True]]:
+#for dat_mod in [[False, False], [True, False], [False, True], [True, True]]:
+for dat_mod in [[True, False], [False, True], [True, True]]:
      rvrs = dat_mod[0]
      hlfs_intrchg = dat_mod[1]
      srvrs = ""#

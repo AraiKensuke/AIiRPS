@@ -43,17 +43,20 @@ clrs     = ["green", "blue", "red", "orange", "grey"]
 #key_dats = ["Aug182020_16_25_28"]#, "Aug182020_16_44_18"]
 key_dats = ["Jan092020_15_05_39"]
 #key_dats = ["Aug122020_12_52_44"]
+key_dats     = ["Aug182020_16_02_49"]
 #key_dats = ["Jan082020_17_03_48"]
 #key_dats  = ["Aug122020_13_30_23"]
 #key_dats = ["Jan082020_17_03_48", "Jan092020_15_05_39", "Aug122020_12_52_44", "Aug122020_13_30_23", "Aug182020_15_45_27"]  # Ken
 #key_dats = ["Aug182020_16_25_28", "Aug182020_16_44_18"]  # Ali 
 
 
-armv_ver = 4
+weighted = True
+sweighted= "_wgtd" if weighted else ""
+armv_ver = 1
 gcoh_ver =3
-label    = 5
+label    = 8
 
-win, slideby      = _ppv.get_win_slideby(gcoh_ver)
+win, slideby, dpss_bw      = _ppv.get_win_slideby(gcoh_ver)
 
 ev_n = 0
 
@@ -87,6 +90,7 @@ gk = gauKer(2)
 ch_w_CM, rm_chs, list_ch_names, ch_types = datconf.getConfig(datconf._RPS)
 arr_ch_names = _N.array(list_ch_names)
 
+pk_win_sec   = 2.5
 for dat_mod in [[False, False], [True, False], [False, True], [True, True]]:
      rvrs   = dat_mod[0]
      hlfs_intrchg=dat_mod[1]
@@ -139,7 +143,7 @@ for dat_mod in [[False, False], [True, False], [False, True], [True, True]]:
          mn_mins = _N.empty(1+SHFLS)
          min_max_corr = _N.empty(1+SHFLS)
 
-         pk_win = int(_N.ceil(2. / (slideby/Fs)))
+         pk_win = int(_N.ceil(pk_win_sec / (slideby/Fs)))
          for rndmz in range(1+SHFLS):
               ir += 1
               print("rand %d"   % ir)
@@ -194,6 +198,8 @@ for dat_mod in [[False, False], [True, False], [False, True], [True, True]]:
 
                              #loXC = srtd[int((2*midp+1)*0.15)]
 
+                             weight = all_shps[ixc][icol] if weighted else 1
+
                              if (len(minimas) > 0):
                                   for i in range(len(minimas)):
                                        im  = minimas[i] + midp-pk_win
@@ -232,12 +238,36 @@ for dat_mod in [[False, False], [True, False], [False, True], [True, True]]:
               fig.subplots_adjust(left=0.08, right=0.95, bottom=0.08, top=0.95, wspace=0.2, hspace=0.3)
               _plt.savefig("%(pd)s/cmp_xcorrs_%(ky)s_%(fr)s" % {"pd" : outdir, "fr" : frg, "ky" : key})
               """
+
+              if weighted:
+                   maxs_kys = list(max_near_midp.keys())
+                   mins_kys = list(min_near_midp.keys())
+                   maxs_weights  = _N.empty((len(maxs_kys), 1))
+                   mins_weights  = _N.empty((len(mins_kys), 1))
+
+                   iky = -1
+                   for ky in maxs_kys:
+                        iky += 1
+                        ep, npat = ky.split(",")
+                        maxs_weights[iky, 0] = all_shps[int(npat), int(ep)]
+                   maxs_weights /= _N.sum(maxs_weights)
+                   iky= -1
+                   for ky in mins_kys:
+                        iky += 1
+                        ep, npat = ky.split(",")
+                        mins_weights[iky, 0] = all_shps[int(npat), int(ep)]
+                   mins_weights /= _N.sum(mins_weights)
+
               maxs = _N.array(list(max_near_midp.values()))
               mins = _N.array(list(min_near_midp.values()))
 
               if (maxs.shape[0] > 0) and (mins.shape[0] > 0):
-                   mn_max = _N.mean(maxs, axis=0)
-                   mn_min = _N.mean(mins, axis=0)
+                   if weighted:
+                        mn_max = _N.sum(maxs*maxs_weights, axis=0)
+                        mn_min = _N.sum(mins*mins_weights, axis=0)
+                   else:
+                        mn_max = _N.mean(maxs, axis=0)
+                        mn_min = _N.mean(mins, axis=0)
 
                    wd = pk_win*3   #  for correlation
                    mn_min_outer = _N.ones(2*midp+1 - 2*wd) * -1
@@ -313,9 +343,9 @@ for dat_mod in [[False, False], [True, False], [False, True], [True, True]]:
                    _plt.yticks([-0.2, 0, 0.2])
                    _plt.grid()
 
-         _plt.suptitle("%(ky)s %(rv)s" % {"ky" : key, "rv" : srvrs})
+         _plt.suptitle("%(ky)s %(rv)s  %(wgt)s   peakwin %(pks).1f sec" % {"ky" : key, "rv" : srvrs, "wgt" : ("weighted" if weighted else ""), "pks" : pk_win_sec})
          fig.subplots_adjust(left=0.06, right=0.98, bottom=0.05, top=0.9)
-         _plt.savefig("%(pd)s/cmp_xcorrs_show_%(ky)s_%(fr)s" % {"pd" : outdir, "fr" : frg, "ky" : key})
+         _plt.savefig("%(pd)s/cmp_xcorrs_show_%(ky)s_%(fr)s_%(lb)d%(rs)s" % {"pd" : outdir, "fr" : frg, "ky" : key, "lb"  : label, "rs" : srvrs})
 
          max_keys = max_near_midp.keys()
          min_keys = min_near_midp.keys()
@@ -365,7 +395,7 @@ for dat_mod in [[False, False], [True, False], [False, True], [True, True]]:
 
 
          fig  = _plt.figure(figsize=(6, 6))
-         _plt.suptitle("%(ky)s %(rv)s" % {"ky" : key, "rv" : srvrs})
+         _plt.suptitle("%(ky)s %(rv)s  %(wgt)s   peakwin %(pks).1f sec" % {"ky" : key, "rv" : srvrs, "wgt" : ("weighted" if weighted else ""), "pks" : pk_win_sec})
          fig.add_subplot(2, 2, 1)
          _plt.title("maxes %(o)d/%(s)d" % {"o" : len(_N.where(mn_maxs[1:] > mn_maxs[0])[0]), "s" : SHFLS})
          _plt.hist(mn_maxs[1:], bins=_N.linspace(0, 0.2, 51), color="black")
@@ -384,4 +414,4 @@ for dat_mod in [[False, False], [True, False], [False, True], [True, True]]:
          _plt.hist(min_max_corr[1:], bins=_N.linspace(-1, 1, 51), color="black")
          _plt.axvline(x=min_max_corr[0], color="red", ls=":", lw=2)
 
-         _plt.savefig("%(pd)s/cmp_xcorrs_%(ky)s_%(fr)s_%(lb)d%(rs)s" % {"pd" : outdir, "fr" : frg, "ky" : key, "rs" : srvrs, "lb" : label})
+         _plt.savefig("%(pd)s/cmp_xcorrs%(sw)s_%(ky)s_%(fr)s_%(lb)d%(rs)s" % {"pd" : outdir, "fr" : frg, "ky" : key, "rs" : srvrs, "lb" : label, "sw" : sweighted})

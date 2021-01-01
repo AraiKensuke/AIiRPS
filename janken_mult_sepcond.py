@@ -62,7 +62,7 @@ ITER = 20000
 it0  = 15000
 it1  = 20000
 
-label=11
+label=8
 #  priors for inv gamma   #  B/(a+1)
 
 rndmz = False
@@ -88,9 +88,11 @@ tr1      = -1
 #dat_fn="20May29-1923-44"
 #dat_fn="20May29-1419-14"
 #
-dat_fn      = "20Jan09-1504-32"
+#dat_fn      = "20Jan09-1504-32"
+#dat_fn      = "20Jan09-1504-32"
 #dat_fn="20Aug12-1331-06"
 #dat_fn="20Jan08-1703-13"
+dat_fn="20Aug18-1603-42"
 #dat_fn="20Aug12-1252-50"
 #dat_fn="20Nov22-1108-25"
 #dat_fn="20Nov21-2131-38"
