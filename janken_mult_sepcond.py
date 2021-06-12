@@ -58,11 +58,11 @@ smp_every = 50
 # ITER = 35000
 # it0  = 31000
 # it1  = 35000
-ITER = 20000
-it0  = 15000
-it1  = 20000
+ITER = 30000
+it0  = 25000
+it1  = 30000
 
-label=8
+label=14
 #  priors for inv gamma   #  B/(a+1)
 
 rndmz = False
@@ -89,10 +89,11 @@ tr1      = -1
 #dat_fn="20May29-1419-14"
 #
 #dat_fn      = "20Jan09-1504-32"
-#dat_fn      = "20Jan09-1504-32"
+dat_fn      = "20Jan09-1504-32"
 #dat_fn="20Aug12-1331-06"
 #dat_fn="20Jan08-1703-13"
-dat_fn="20Aug18-1603-42"
+#dat_fn="20Aug18-1603-42"
+#dat_fn="20Aug18-1546-13"
 #dat_fn="20Aug12-1252-50"
 #dat_fn="20Nov22-1108-25"
 #dat_fn="20Nov21-2131-38"
@@ -100,7 +101,7 @@ dat_fn="20Aug18-1603-42"
 #dat_fn="20Dec05-0913-27"
 #dat_fn="20Dec05-0950-54"
 
-random_walk = False
+random_walk = True
 flip_human_AI=False
 #########################################
 process_keyval_args(globals(), sys.argv[1:])

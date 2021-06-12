@@ -56,15 +56,15 @@ armv_ver
 GCoh_ver
 savgol_win
 """
-dats = {"20Jan09-1504-32" : ["12:00:00", "12:00:00", 8, 4, 3, 5],
+dats = {"20Jan09-1504-32" : ["12:00:00", "12:00:00", 14, 4, 3, 5],
         #"20Jan09-1504-32" : ["12:00:00", "12:00:00", 5, 4, 3, 5],
         "20Aug18-1624-01" : ["12:00:00", "12:00:01", 100, 1, 3, 5],
         "20Aug18-1603-42" : ["12:00:00", "12:00:01", 8, 1, 3, 5],
-        "20Jan08-1703-13" : ["12:00:00", "12:00:01", 5, 1, 3, 5],
-        "20Aug18-1644-09" : ["12:00:00", "12:00:01", 101, 1, 10, 5],
-        "20Aug18-1546-13" : ["12:00:00", "12:00:01", 5, 1, 3, 5],
-        "20Aug12-1252-50" : ["12:00:00", "12:00:01", 5, 1, 3, 5],
-        "20Aug12-1331-06" : ["12:00:00", "12:00:01", 5, 1, 3, 5]
+        "20Jan08-1703-13" : ["12:00:00", "12:00:01", 13, 1, 3, 5],
+        "20Aug18-1644-09" : ["12:00:00", "12:00:01", 100, 1, 3, 5],
+        "20Aug18-1546-13" : ["12:00:00", "12:00:01", 13, 1, 3, 5],
+        "20Aug12-1252-50" : ["12:00:00", "12:00:01", 13, 1, 3, 5],
+        "20Aug12-1331-06" : ["12:00:00", "12:00:01", 14, 1, 3, 5]
 }
 
 #dats = {"rpsm_20Jan09-1500-00.dat" : ["Jan092020_15_00_35_artfctrmvd.dat", "12:00:00", "12:00:00"]}
@@ -235,7 +235,9 @@ als
     dat_pkg["behv"]  = sigcov_behv_sig
     dat_pkg["fbehv"]  = sigcov_behv_fsig
     dat_pkg["savgol_win"] = savgol_win
-    dat_pkg["behv_ts"] = hnd_dat[2:, 3]
+    #  It is 2: because derivative of filter signal.
+    #  original hand data:   size N.  N-1 filtered time points, N-2 derivative points.  So our behavioral data is size N-2
+    dat_pkg["behv_ts"] = hnd_dat[2:, 3]  
     print("behv_ts shape")
     print(dat_pkg["behv_ts"].shape)
     dat_pkg["hnd_dat"] = hnd_dat
@@ -361,7 +363,7 @@ als
 
 #  THESE KEYS ARE RPS GAME DATA NAMES
 #for rpsm_key in ["20Jan08-1703-13"]:
-#for rpsm_key in ["20Jan09-1504-32"]:
+for rpsm_key in ["20Jan09-1504-32"]:
 #for rpsm_key in ["20Aug12-1331-06"]:
 #for rpsm_key in ["20Jan09-1504-32"]:
 #for rpsm_key in ["20Aug12-1252-50", "20Jan09-1504-32", "20Aug18-1644-09", "20Aug18-1624-01", "20Aug12-1331-06"]:
@@ -371,7 +373,7 @@ als
 #for rpsm_key in ["20Aug18-1546-13"]:
 #for rpsm_key in ["20Aug18-1603-42"]:
 #for rpsm_key in ["20Aug18-1624-01"]:
-for rpsm_key in ["20Aug18-1603-42"]:
+#for rpsm_key in ["20Aug18-1603-42"]:
     savedir, dat_pkg, win_gcoh, slideby_gcoh, armv_ver, gcoh_ver, label = pkg_all_data(rpsm_key)  #  first nperseg/2 points are constant
     #pkg_all_data(rpsm_key)  #  first nperseg/2 points are constant
 

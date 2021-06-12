@@ -1,16 +1,11 @@
 import AIiRPS.simulation.prcptrn2dw as prcptrn
-import AIiRPS.simulation.samk as samk
 import numpy as _N
 import time as _tm
+import AIiRPS.simulation.janken_switch_hands_multi as _jsh
 import AIiRPS.simulation.janken_switch_hands_multi as _jsh
 import matplotlib.pyplot as _plt
 import datetime
 import pickle
-
-_NME = 0
-_MC1 = 1
-_MC2 = 2
-_PRC = 3
 
 month_str = ["Jan","Feb", "Mar", "Apr", "May", "Jun",
              "Jul","Aug", "Sep", "Oct", "Nov", "Dec"]
@@ -37,23 +32,19 @@ cyclic_jmp       = -1   #  or -1
 
 
 ###############################################
-T1           = ([[0.1, 0.8, 0.1],  #  prob stay, down, up | WIN
-                 [0.2, 0.7, 0.1],  #  prob stay, down, up | TIE
-                 [0.1, 0.8, 0.1]]) #  prob stay, down, up | LOSE
+T1           = ([[0.1, 0.8, 0.1],  #  win-stay-lose-switch, tie different
+                 [0.2, 0.7, 0.1],
+                 [0.1, 0.8, 0.1]])
 T2           = ([[0.8, 0.1, 0.1],  #  win-stay-lose-switch, tie different
-                 [0.7, 0.2, 0.1],
+                 [0.7, 0.2, 0.4],
                  [0.1, 0.1, 0.8]])
 
-T3           = ([[0.1, 0.7, 0.2],  #  win-stay-lose-switch, tie different
-                 [0.1, 0.2, 0.7],
-                 [0.7, 0.2, 0.1]])
+T3           = ([[0.2, 0.6, 0.2],  #  win-stay-lose-switch, tie different
+                 [0.2, 0.7, 0.1],
+                 [0.3, 0.8, 0.1]])
 T4           = ([[0.6, 0.2, 0.2],  #  win-stay-lose-switch, tie different
                  [0.7, 0.2, 0.4],
                  [0.1, 0.3, 0.8]])
-
-TA           = ([[1, 0, 0],  #  win-stay-lose-switch, tie different
-                 [0, 1, 0.],
-                 [0, 0, 1]])
 
 """
 ##############################################
@@ -89,7 +80,7 @@ RND_sam1108_25           = ([[0.28, 0.36, 0.36],  #  win-stay-lose-switch, tie d
                        [0.31, 0.345, 0.345]])
 
 
-Ts           = _N.array([T1, T2, T3])#, T4])
+Ts           = _N.array([T1, T2])#, T4])
 #Ts           = _N.array([T2.T, T4.T])#, T4])
 #Ts           = _N.array([T2, T3, T4])#, T4])
 #Ts           = _N.array([RND_sam1108_25])#, T4])
@@ -98,10 +89,10 @@ Ts           = _N.array([T1, T2, T3])#, T4])
 
 #  next_hand(T, wtl, last_hand)
 
-switch_T_shrt = 15
-switch_T_long = 25
+switch_T_shrt = 16
+switch_T_long = 30
 
-max_hands  = 500
+max_hands  = 600
 
 strt_chg_intvs    = _N.random.randint(switch_T_shrt, switch_T_long, size=max_hands)
 strt_chg_times    = _N.cumsum(strt_chg_intvs)
@@ -110,9 +101,8 @@ strt_chg_times01  = _N.zeros(max_hands+1, dtype=_N.int)
 strt_chg_times01[strt_chg_times[0:uptohere]] = 1
 
 vs_human   = False     #  is there dynamics in the human hand selection?
-hist_dep_hands = True   # if vs_human is False, does AI play random or vs rule
-comp       = _MC2  #  _MC1, _MC2, _PRC
-mc_decay   = 0.1
+vs_comp    = True
+comp       = _NME  #  _MC1, _MC2, _PRC
 
 #   percept vs human
 #   percept vs computer (hist_dep)
@@ -122,7 +112,7 @@ mc_decay   = 0.1
 #   Nash_eq vs computer (not hist_dep)
 
 
-REPS       = 100
+REPS       = 1
 
 chg        = _N.zeros(REPS)
 fws        = _N.zeros((REPS, 3), dtype=_N.int)
@@ -153,11 +143,8 @@ for rep in range(REPS):
     # w = _N.zeros(9*N+3)              # weights
     fw= _N.zeros(3, dtype=_N.int)    #  cum win, draw, lose
 
-    if comp != _NME:
-        if comp == _PRC:
-            HAL9000 = prcptrn.perceptron(N)
-        else:
-            HAL9000 = samk.MarkovChain(1, mc_decay, transform=(comp == _MC2))
+    if
+    HAL9000 = prcptrn.perceptron(N)
 
     m=1
     pairs = []
@@ -167,11 +154,13 @@ for rep in range(REPS):
 
     t00    = _tm.time()
 
+    #pair   = 
     prev_w = True
     prev_m = 1
 
     iCurrStrat = 0
     N_strategies = Ts.shape[0]
+    print("N_strategies  %d" % N_strategies)
 
     prevM = 1
     prevWTL = 1
@@ -183,10 +172,7 @@ for rep in range(REPS):
     iSinceLastStrChg = 0
 
     switch_ts = []
-
-    initial = _N.random.choice(['1','2','3'])    
-    pair = "11"
-
+    
     while not quit:
         hds += 1
 
@@ -194,8 +180,7 @@ for rep in range(REPS):
         #  first, perceptron prediction of player move
 
         #pred=_N.random.randint(1, 4) if vs_NME else HAL9000.predict(m,x,w,v, update=(hds%20==0))   # pred is prediction of user move (1,2,3) */
-        pred=_N.random.randint(1, 4) if comp == _NME else int(HAL9000.predict(pair))   # pred is prediction of user move (1,2,3) */)
-
+        pred=_N.random.randint(1, 4) if vs_NME else HAL9000.predict(m)   # pred is prediction of user move (1,2,3) */
         #pred=_N.random.randint(1, 4) if vs_NME else HAL9000.predict(m,x,w,v)   # pred is prediction of user move (1,2,3) */
         #pred=_N.random.randint(1, 4) if vs_NME else HAL9000.predict(m,x,w,v, update=True, uw=0.0001)   # pred is prediction of user move (1,2,3) */
 
@@ -254,7 +239,6 @@ for rep in range(REPS):
 
             if hds >= max_hands:
                 quit = True
-            pair="%(prd)d%(m)d" % {"prd" : int(pred), "m" : m}
 
         if not quit:
             # show perceptron's move
@@ -299,10 +283,10 @@ for rep in range(REPS):
                 print("    PER %(pc)d,  TIE %(tie)d, [[HUMAN]] %(hum)d   UpOrDown %(updn)d" % {"pc" : fw[2], "tie" : fw[1], "hum" : fw[0], "updn" : (fw[0] - fw[2])})
 
     t01 = _tm.time()
-    #print("game duration  %.1f" % (t01-t00))    
+    print("game duration  %.1f" % (t01-t00))    
 
     fws[rep] = fw
-    #print("    PER %(pc)d,  TIE %(tie)d, [[HUMAN]] %(hum)d   UpOrDown %(updn)d" % {"pc" : fw[2], "tie" : fw[1], "hum" : fw[0], "updn" : (fw[0] - fw[2])})
+    print("    PER %(pc)d,  TIE %(tie)d, [[HUMAN]] %(hum)d   UpOrDown %(updn)d" % {"pc" : fw[2], "tie" : fw[1], "hum" : fw[0], "updn" : (fw[0] - fw[2])})
 
     if rep == 0:   #  only save 1st one
         file_nm = "/Users/arai/nctc/Workspace/AIiRPS_SimDAT/%s.dat" % jh_fn_mod
@@ -320,17 +304,3 @@ for rep in range(REPS):
         dmp = open("/Users/arai/nctc/Workspace/AIiRPS_SimDAT/%s.dmp" % jh_fn_mod, "wb")
         pickle.dump(pklme, dmp, -1)
         dmp.close()
-
-if REPS > 1:
-    print("mean human wins, mean ties, mean computer wins")
-    print(_N.mean(fws, axis=0))
-
-
-    if (comp == _MC1) or (comp == _MC2):
-        print("vs MC%d" % comp)
-        print("decay:  %.3f" % mc_decay)
-    else:
-        print("vs perceptron")
-
-    print("human number strategies  %d" % Ts.shape[0])
-    print("human change:  %(1)d  %(2)d" % {"1" : switch_T_shrt, "2" : switch_T_long})

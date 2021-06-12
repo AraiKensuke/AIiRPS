@@ -59,6 +59,25 @@ def get_a_B_aF0_bF0(label):
         B_q2 = 5.5
         a_F0 = 0.9
         b_F0 = 1
+    elif label == 12:
+        #  B / (a+1)
+        a_q2 = 15.
+        B_q2 = 13.
+        a_F0 = 0.95
+        b_F0 = 1
+    elif label == 13:
+        #  B / (a+1)
+        a_q2 = 15
+        B_q2 = 20
+        a_F0 = 0
+        b_F0 = 1
+    elif label == 14:
+        #  B / (a+1)
+        a_q2 = 15
+        B_q2 = 30
+        a_F0 = 0
+        b_F0 = 1
+
 
 
     return a_q2, B_q2, a_F0, b_F0

@@ -8,6 +8,7 @@ import LOSTtmp.kfARlib1c as _kfar
 capped = 0
 l_capped = []
 
+
 def sampleAR1_and_offset(it, Tm1, off_mu, off_sig2, vrnc, vrncL, B_n, offset, \
                          kappa, ws, q2_B_n, a_F0, b_F0, a_q2, B_q2, \
                          px, pV, fx, fV, K, random_walk):
@@ -48,6 +49,47 @@ def sampleAR1_and_offset(it, Tm1, off_mu, off_sig2, vrnc, vrncL, B_n, offset, \
         
     return offset, F0_B_n, q2_B_n
 
+
+def sampleAR_and_offset_conditional(it, Tm1, vrnc, vrncL, \
+                        B_n, v_n, offset, \
+                        B_1_n, v_1, offset_1, \
+                        B_2_n, v_2, offset_2, \
+                        kappa, ws, q2_B_n, a_F0, b_F0, a_q2, B_q2, px, pV, fx, fV, K, random_walk):
+    global capped, l_capped
+    offset_mu = (kappa / ws - (B_1_n+offset_1)*v_1 - (B_2_n+offset_2)*v_2)/v_n - B_n
+    mu_w  = _N.sum(offset_mu*ws) / _N.sum(ws)   #  from likelihood
+    mu  = (mu_w*off_sig2 + off_mu*vrncL) / (off_sig2 + vrncL) # lklhd & prior
+    offset[:] = mu + _N.sqrt(vrnc)*_N.random.randn()
+
+    F0AA = _N.dot(B_n[0:-1], B_n[0:-1])
+    F0BB = _N.dot(B_n[0:-1], B_n[1:])
+
+    F0_B_n = 1
+    if not random_walk:
+        F0std= _N.sqrt(q2_B_n/F0AA)
+        F0a, F0b  = (a_F0 - F0BB/F0AA) / F0std, (b_F0 - F0BB/F0AA) / F0std
+        F0_B_n=F0BB/F0AA+F0std*_ss.truncnorm.rvs(F0a, F0b)
+
+    #   sample q2
+    a = a_q2 + 0.5*Tm1  #  N + 1 - 1
+    #a = 0.5*Nm1  #  N + 1 - 1
+    rsd_stp = B_n[1:] - F0_B_n*B_n[0:-1]
+    BB = B_q2 + 0.5 * _N.dot(rsd_stp, rsd_stp)
+    #BB = 0.5 * _N.dot(rsd_stp, rsd_stp)
+    q2_B_n = _ss.invgamma.rvs(a, scale=BB)
+
+    y             = (kappa/ws - (B_1_n+offset_1)*v_1 - (B_2_n+offset_2)*v_2)/v_n - offset
+    Rv = 1. / ws
+
+    _kfar.armdl_FFBS_1itr_singletrial(Tm1, y, Rv, F0_B_n, q2_B_n,
+                                      fx, fV, px, pV, B_n, K)    
+    near1 = _N.where(B_n > 100)[0]
+    if len(near1) > 0:
+        B_n[near1] = 100   #  cap it   #  prevents overflow in exp
+        capped += 1
+        l_capped.append(it)
+        
+    return offset, F0_B_n, q2_B_n
 
 class multinomial_gibbs:
     Tm1     = None
@@ -145,3 +187,4 @@ class multinomial_gibbs:
 
         print(smp_F0s[:, 0])
         print(smp_F0s[:, 1])
+

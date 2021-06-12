@@ -53,8 +53,8 @@ shfl_type_str   = _N.array(["keep_cont", "no_keep_cont"])
 
 clrs     = ["green", "blue", "red", "orange", "grey"]
 #key_dats = dats.keys()
-#key_dats = ["Aug182020_16_44_18"]
-#key_dats   = ["Aug182020_15_45_27"]
+key_dats = ["Aug182020_16_44_18"]
+key_dats   = ["Aug182020_15_45_27"]
 #key_dats=["Aug182020_16_25_28"]
 #key_dats = ["Aug182020_16_25_28"]#, "Aug182020_16_44_18"]
 key_dats = ["Jan092020_15_05_39"]
@@ -71,7 +71,7 @@ no_skull = True
 sweighted= "_wgtd" if weighted else ""
 armv_ver = 4
 gcoh_ver =3
-label    = 8
+label    = 5
 
 t_offset = 0
 win, slideby, dpss_bw      = _ppv.get_win_slideby(gcoh_ver)
@@ -184,7 +184,7 @@ for key in key_dats:
          min_max_corr = _N.empty(1+SHFLS)
 
          pk_win = int(_N.ceil(pk_win_sec / (slideby/Fs)))
-         for rndmz in range(1+SHFLS):
+
               ir += 1
               print("rand %d"   % ir)
               max_near_midp = {}
@@ -202,8 +202,8 @@ for key in key_dats:
               impa = -1
               for ixc in range(len(xcs)):
                    for icol in range(sections):
-                        if not _N.isnan(xcs[ixc, icol, 0]):
-                             fxcs = _N.array(xcs[ixc, icol])#convolve(xcs[ixc][icol], gk, mode="same")
+                        if not _N.isnan(xcs[ixc][icol][0]):
+                             fxcs = _N.convolve(xcs[ixc][icol], gk, mode="same")
                              fxcs -= _N.mean(fxcs)
                              srtd = _N.sort(fxcs)  #  to find highest point of xc
 
@@ -366,8 +366,8 @@ for key in key_dats:
                         _plt.axhline(y=miny, ls=":", color="grey")
                    _plt.xticks(xticksD)
                    _plt.grid()
-                   _plt.ylim(-0.6, 0.6)
-                   _plt.yticks([-0.5, 0, 0.5])
+                   _plt.ylim(-0.2, 0.2)
+                   _plt.yticks([-0.2, 0, 0.2])
                    ########################
                    ax = fig.add_subplot(2, 8, ir+9)
                    if rndmz > 0:
@@ -387,8 +387,8 @@ for key in key_dats:
 
 
                    _plt.xticks(xticksD)
-                   _plt.ylim(-0.6, 0.6)
-                   _plt.yticks([-0.5, 0, 0.5])
+                   _plt.ylim(-0.2, 0.2)
+                   _plt.yticks([-0.2, 0, 0.2])
                    _plt.grid()
 
          _plt.suptitle("%(ky)s %(rv)s  %(wgt)s   peakwin %(pks).1f sec" % {"ky" : key, "rv" : srvrs, "wgt" : ("weighted" if weighted else ""), "pks" : pk_win_sec})

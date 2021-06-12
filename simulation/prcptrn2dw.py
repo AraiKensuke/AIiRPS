@@ -31,10 +31,11 @@ class perceptron:
     #  x[0:3]   x[3:6]  ... x[12:15]   x[15].  what is x[3*N]? for
     # v[3],x[3*N+1],w[9*N+3]
 
-    def predict(self, prev_m, update=True, uw=1., update_rule=1):
+    def predict(self, prev_pair, update=True, uw=1., update_rule=1):
         """
         prev_m is previous player move.  
         """
+        prev_m  = int(prev_pair[1])
         N  = self.N
         x  = self.x
         w  = self.w
