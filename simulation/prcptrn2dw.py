@@ -12,6 +12,7 @@ class perceptron:
         self.v = _N.zeros(3)
         self.x = _N.zeros(3*self.N+1)
         self.x[3*self.N] = -1    # threshold      x[3*N] never changes
+        #self.x[3*self.N] = 0    # threshold      x[3*N] never changes
         self.w = _N.zeros((3, 3*self.N+1))
 
     def binary_rep(self, m):   
@@ -36,11 +37,25 @@ class perceptron:
         prev_m is previous player move.  
         """
         prev_m  = int(prev_pair[1])
+        print("...................In predict  player:   %(1)d" % {"1" : prev_pair[1]})
         N  = self.N
         x  = self.x
+        #  x[0] is R0
+        #  x[1] is S0
+        #  x[2] is P0
+        #  x[3] is R1
+        #  x[4] is S1
+        #  x[5] is P1        
+        
         w  = self.w
         v  = self.v
-
+        print("old x")
+        print(x)
+        
+        #  
+        
+        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        print(w)
         #  m is previous player move.  (last game)
         #  x is past data, w is weights, v is prediction to be compared w/ user
         #  we return 1, 2 or 3
@@ -54,14 +69,33 @@ class perceptron:
         #  it again to decide whether weights w should be changed.
 
         if update_rule == 1:
-            for k in range(3):   #  for each predictive unit
+            for i in range(3):   #  for each predictive unit
                 #  if +/- of predict units don't match users's move, then 
                 #  perform error correction learning  (change weight)
-                if HUM_hand_bin[k] * v[k] <= 0:             
-                    w[k] += uw*HUM_hand_bin[k]*x
+                if HUM_hand_bin[i] * v[i] <= 0:             
+                    #w[i] += uw*HUM_hand_bin[i]*x
+                    #w[i] += uw*HUM_hand_bin[i]*x
+                    ####  THIS IS WHAT WE MEAN
+                    #for k in range(3*N):
+                    #    w[i, k] += HUM_hand_bin[i] * x[k]
+                    #for k in range(3*N):
+                    #
+                    # w[i, 0] += HUM_hand_bin[i] * x[0]
+                    # w[i, 1] += HUM_hand_bin[i] * x[2]
+                    # w[i, 2] += HUM_hand_bin[i] * x[4]
+                    # w[i, 3] += HUM_hand_bin[i] * x[1]
+                    # w[i, 4] += HUM_hand_bin[i] * x[3]
+                    # w[i, 5] += HUM_hand_bin[i] * x[5]                    
+                    w[i, 0] += HUM_hand_bin[i] * x[0]
+                    w[i, 1] += HUM_hand_bin[i] * x[3]
+                    w[i, 2] += HUM_hand_bin[i] * x[1]
+                    w[i, 3] += HUM_hand_bin[i] * x[4]
+                    w[i, 4] += HUM_hand_bin[i] * x[2]
+                    w[i, 5] += HUM_hand_bin[i] * x[5]                    
+                    
         elif update_rule == 2:    #  probably more familiar update rule
             for k in range(3):   #  for each predictive unit
-                w[k] += uw*(HUM_hand_bin[k] - v[k])*x
+                w[i] += uw*(HUM_hand_bin[i] - v[i])*x
 
         ###  (g0 c0 p0) is newest player hand, binary representation
         ###  shift over x=[g1 c1 p1   g2 c2 p2   g3 c3 p3]
@@ -69,6 +103,8 @@ class perceptron:
         for i in range(3*N-3):
             x[3*N-1-i] = x[3*N-4-i]
         x[0:3] = HUM_hand_bin[0:3]
+        print("new x")
+        print(x)
 
         #  calculate perceptron output for each perceptron
         for k in range(3):
@@ -82,6 +118,8 @@ class perceptron:
             if v[k] >= vmax:
                 vmax = v[k] 
                 kmax = k
+        print("****************************")
+        print(w)
 
         #  this prediction will be compared with player's hand 
         #  received after this function returns, 

@@ -1,29 +1,112 @@
 import numpy as _N
 import re
 import os
+import glob
+import pandas as pd
 
+_TRUE_ONLY_  = 0
+_FALSE_ONLY_ = 1
+_TRUE_AND_FALSE_ = 2
 try:
     if os.environ["AIiRPS_on_colab"] == "1":
         print("found AIiRPS_on_colab")
-        simulation_data_dir="AIiRPS/sampledata/simu_vs_AI"
-        data_dir="AIiRPS/sampledata/HP_vs_AI"
+        _simulation_data_dir="AIiRPS/sampledata/simu_vs_AI"
+        _data_dir="AIiRPS/sampledata/HP_vs_AI"
 except KeyError:   #####  SET THIS IF RUNNING LOCALLY
     print("didn't find AIiRPS_on_colab")
-    simulation_data_dir="/Users/arai/nctc/Workspace/AIiRPS_SimDAT"
-    data_dir="/Users/arai/Sites/janken/taisen_data"
+    _simulation_data_dir="/Users/arai/nctc/Workspace/AIiRPS_SimDAT"
+    _data_dir="/Users/arai/Sites/taisen/DATA"
+    _data_dir_base = "/Users/arai/Sites/taisen/DATA"
 
-def return_hnd_dat(ufn, tr0=0, tr1=None, know_gt=False, flip_human_AI=False):
-    global simulation_data_dir, data_dir
-    baseDir = data_dir if not know_gt else simulation_data_dir
-    with open('%(bd)s/rpsm_%(fn)s.dat' % {"bd" : baseDir, "fn" : ufn}, 'r') as f:
+def date_range(start=None, end=None):
+    date_strs = []    
+    if (start is not None) and (end is not None):
+        dates = pd.date_range(start=start, end=end)
+
+        for date_tmstmp in dates:
+            _date = "%(yr)d%(mn)2d%(dy)2d" % {"yr" : date_tmstmp.year, "mn" : date_tmstmp.month, "dy" : date_tmstmp.day}
+            date  = _date.replace(" ", "0")
+            date_strs.append(date)
+    return date_strs
+    
+
+def return_hnd_dat(day_time, tr0=0, tr1=None, know_gt=False, flip_human_AI=False, has_useragent=False, has_start_and_end_times=False, has_constructor=False, block=1, expt="EEG1", visit=None, ai_states=False):
+    """
+    starttime and endtime needed because filename date is when userID was crafted, but not the time RPS game was started.
+    """
+    data_dir = "%(dd)s/%(ex)s" % {"dd" : _data_dir, "ex" : expt}
+    baseDir = data_dir if not know_gt else _simulation_data_dir
+    day = day_time[0:8]
+
+    look_in_dir = "%(dd)s/%(dy)s/%(dt)s" % {"dd" : data_dir, "dt" : day_time, "dy" : day}
+
+    if visit is None:
+        s = "%s/*.dat" % look_in_dir
+    else:
+        s = "%(lid)s/%(v)d/*.dat" % {"lid" : look_in_dir, "v" : visit}
+
+    dat_files = glob.glob(s)
+    #
+    rpsm_fn = None
+    if len(dat_files) == 1:
+        rpsm_fn = dat_files[0][len(look_in_dir)+1:]
+    else:
+        if block is not None:
+            for ib in range(len(dat_files)):
+                base_filename = dat_files[ib][0:-4]
+                bfnl          = len(base_filename)
+                
+                str_bl = str(block)
+                len_blstr = len(str_bl)   #  length of block # as a string
+                if base_filename[bfnl-len_blstr-3:bfnl-3] == str_bl:
+                    rpsm_fn = dat_files[ib][len(look_in_dir)+1:]
+                    #rpsm_fn = os.path.basename(dat_files[ib])
+
+    if rpsm_fn is None:
+        print("returning None      %d" % block)
+        return None, None, None, None, None
+
+    #print("----")
+    #print('%(bd)s/%(day)s/%(partID)s/%(rpsmfn)s' % {"day" : day, "partID" : day_time, "bd" : baseDir, "rpsmfn" : rpsm_fn})
+    
+    with open('%(bd)s/%(day)s/%(partID)s/%(rpsmfn)s' % {"day" : day, "partID" : day_time, "bd" : baseDir, "rpsmfn" : rpsm_fn}) as f:
         lines = f.read().splitlines()
 
+    start = -1
+    end   = -1    
     iCommOffset = 1 if lines[0][0] == "#" else 0
-    rec_hands     = lines[iCommOffset].rstrip()
-    rec_per_hands = lines[iCommOffset+1].rstrip()
-    rec_reaction_times = lines[iCommOffset+2].rstrip()    
+    iDataOffset = iCommOffset
+    if has_useragent:
+        UA = lines[iDataOffset].rstrip()
+        iDataOffset += 1
+    if has_start_and_end_times:
+        start = lines[iDataOffset].rstrip()
+        iDataOffset += 1
+        end = lines[iDataOffset].rstrip()
+        iDataOffset += 1
+    if has_constructor:
+        cnstr = lines[iDataOffset].rstrip()
+        iDataOffset += 1
 
-    hh  = re.split(" +", rec_hands)
+    _rec_hands     = lines[iDataOffset].rstrip()
+    iDataOffset += 1        
+    _rec_per_hands = lines[iDataOffset].rstrip()
+    iDataOffset += 1            
+
+    ##  from here, we're going to work with R=1, S=2, P=3
+    rec_hands = _rec_hands.replace("R", "1").replace("S", "2").replace("P", "3")
+    rec_per_hands = _rec_per_hands.replace("R", "1").replace("S", "2").replace("P", "3")    
+    rec_reaction_times = lines[iDataOffset].rstrip()
+    iDataOffset += 1
+    rec_input_method = lines[iDataOffset].rstrip()
+    iDataOffset += 1
+    what_is_this = lines[iDataOffset].rstrip()
+    iDataOffset += 1    
+    rec_ini_percep = lines[iDataOffset].rstrip()
+    iDataOffset += 1    
+    rec_fin_percep = lines[iDataOffset].rstrip()
+    iDataOffset += 1    
+
     if flip_human_AI:
         human_hands   = _N.array(re.split(" +", rec_per_hands), dtype=_N.int)
         per_hands     = _N.array(re.split(" +", rec_hands), dtype=_N.int)
@@ -69,8 +152,7 @@ def return_hnd_dat(ufn, tr0=0, tr1=None, know_gt=False, flip_human_AI=False):
     hnd_dat[:, 1] = per_hands
     hnd_dat[:, 2] = wtl
     #hnd_dat[:, 3] = 0
-
-    return hnd_dat
+    return hnd_dat, start, end, UA, cnstr, rec_input_method, rec_ini_percep, rec_fin_percep
 
 
 def get_consecutive_conditioned_hands(clpd_hnd_dat, h1_1=0, h0_1=0, h1_2=0, h0_2=0, h1_3=0, h0_3=0, conditional_col=2, wtl_rps=None):
@@ -183,3 +265,311 @@ def write_hnd_dat(hnd_dat, fn):
     dat_strng = "0\n0\n0\n0\n0\n"
     fp.write("%s" % dat_strng)
     fp.close()
+
+def filterRPSdats(expt, dates, visits=[1], domainQ=_TRUE_AND_FALSE_, demographic=_TRUE_AND_FALSE_, mentalState=_TRUE_AND_FALSE_, maxIGI=20000, minIGI=0, min_meanIGI=1000, max_meanIGI=10000, MinWinLossRat=0, has_useragent=True, has_start_and_end_times=True, has_constructor=True, blocks=1, ngames=None):
+    """
+    visit:   1, 2, 3    
+    works like a filter
+    """
+    files = []
+    hnd_dats = {}          # key is partID
+    constructors = {}      # key is partID
+    constructors0 = []
+    datn         = -1
+    for date in dates:
+        datdir = "%(bd)s/%(e)s/%(dt)s" % {"bd" : _data_dir_base, "e" : expt, "dt" : date}
+
+        if os.access(datdir, os.F_OK):
+            dats4date = os.listdir(datdir)
+
+            for time in dats4date:   #  the data sets for this day
+                dattmdir = "%(dd)s/%(tm)s" % {"dd" : datdir, "tm" : time}
+
+                demoG = False
+                domQ  = False
+                goods = [False] * len(visits)
+                if os.access("%s/DQ1.txt" % dattmdir, os.F_OK):
+                    demoG = True
+                    if os.access("%s/AQ29.txt" % dattmdir, os.F_OK):
+                        domQ = True
+
+                for visit in visits:   #  multiple visits for the day
+                    inclDemo = False
+                    inclDom  = False
+                    allblocks= False
+                    igiCondMet = _N.ones(blocks, dtype=_N.int)
+                    all_igiCondMet = _N.zeros(blocks, dtype=_N.int)
+                    winCondMet = _N.ones(blocks, dtype=_N.int)      
+                    ngameCondMet = _N.ones(blocks, dtype=_N.int)      
+
+                    fn_for_block = [] # [dat-tm, dat-tm, dat-tm, dat-tm]
+                    dat_for_block = []
+                    cnstr_for_block = []                                        
+                    for blk in range(1, blocks+1):
+                        datfn = "%(dd)s/%(v)d/block%(bl)d_AI.dat" % {"dd" : dattmdir, "v" : visit, "bl" : blk}
+
+                        if os.access(datfn, os.F_OK):
+                            if ((demoG == True) and ((demographic == _TRUE_AND_FALSE_) or (demographic == _TRUE_ONLY_))) or \
+                               ((demoG == False) and ((demographic == _TRUE_AND_FALSE_) or (demographic == _FALSE_ONLY_))):
+                                inclDemo = True
+                            if ((domQ == True) and ((domainQ == _TRUE_AND_FALSE_) or (domainQ == _TRUE_ONLY_))) or \
+                               ((domQ == False) and ((domainQ == _TRUE_AND_FALSE_) or (domainQ == _FALSE_ONLY_))):
+                                inclDom = True
+                            if (inclDemo and inclDom):
+                                theDat, tStrt, tEnd, UA, cnstr, inp_meth, ini_percep, fin_percep = return_hnd_dat(time, tr0=0, tr1=None, know_gt=False, flip_human_AI=False, has_useragent=has_useragent, has_start_and_end_times=has_start_and_end_times, has_constructor=has_constructor, block=blk, visit=visit, expt=expt)
+
+                                if theDat is None:
+                                    print("theDat is None!!!!!!!!!!!")
+                                    print(datfn)
+                                all_avgIGI = _N.mean(_N.diff(theDat[:, 3]))
+                                if (all_avgIGI > min_meanIGI) and (all_avgIGI < max_meanIGI):
+                                    all_igiCondMet[blk-1]= 1
+                                if (minIGI > 0):
+                                    L = theDat.shape[0]
+                                    L5 = L//5
+
+                                    for pc in range(5):
+                                        mult = 1
+                                        avgIGI = _N.mean(_N.diff(theDat[pc*L5:(pc+1)*L5, 3]))
+                                        #print("%(a).3f   %(m)d" % {"a" : avgIGI, "m" : maxIGI})
+
+                                        if (avgIGI < minIGI*mult) or (avgIGI > maxIGI):
+                                            igiCondMet[blk-1] = 0
+                                    
+                                if (MinWinLossRat > 0):
+                                    wins = len(_N.where(theDat[:, 2] == 1)[0])
+                                    loss = len(_N.where(theDat[:, 2] == -1)[0])
+                                    if (wins / loss) < MinWinLossRat:
+                                        ###  losing too many times
+                                        winCondMet[blk-1] = 0
+                                if (ngames is not None):
+                                    if ngames == theDat.shape[0]:
+                                        ngameCondMet[blk-1] = 1
+                                    else:
+                                        ngameCondMet[blk-1] = 0
+                                else:
+                                        ngameCondMet[blk-1] = 1
+                                        
+                                if (igiCondMet[blk-1] == 1) and (winCondMet[blk-1] == 1) and (ngameCondMet[blk-1] == 1) and (all_igiCondMet[blk-1] == 1):
+                                    fn_for_block.append(time)
+                                    dat_for_block.append(theDat)
+                                    cnstr_for_block.append(cnstr)
+                                    #hnd_dats[time] = theDat
+                                    #files.append(time)
+                                    #hnd_dats[time] = theDat
+                                    #files.append(time)
+                                    
+                    if len(fn_for_block) == blocks:    #  complete
+                        datn += 1
+                        goods[visit-1] = True   #  we have 4 blocks
+                        if datn == 0:
+                            #  test that all constructors are unique
+                            if no_duplicates(cnstr_for_block):
+                                constructors0 = cnstr_for_block
+                                hnd_dats[time] = dat_for_block
+                                constructors[time] = cnstr_for_block
+                            else:
+                                print("!!! duplicate constructor found as constr0 %s" % time)
+                                goods[visit-1] = False
+                                datn -= 1  
+                        else:
+                            #print(dattmdir)
+                            #print(fn_for_block)
+                            if no_duplicates(cnstr_for_block):
+                                dat_order_like_0 = orderByConstructors(constructors0, cnstr_for_block, dat_for_block)
+                                hnd_dats[time] = dat_order_like_0
+                                constructors[time] = constructors0
+                            else:
+                                print("!!! duplicate constructor found as constr %s" % time)                                
+                                goods[visit-1] = False                                
+
+                good = True
+                for iv in range(len(visits)):
+                    if goods[iv] == False:
+                        good = False
+                if good:
+                    files.append(time)
+                        
+
+    return files, hnd_dats, constructors
+
+def orderByConstructors(useThisOrder, datorder, dats):
+    """
+    useThisOrder is a list of constructors
+    order0dat = orderByConstrcutors(cnstrs[partIDs[0]], cnstrs[partIDs[i]], dats[partIDs[i]])
+    """
+    keyedDat = {}
+    i = -1
+    for cn in datorder:
+        i+=1 
+        keyedDat[cn] = dats[i]
+    reordered = []
+
+    i = -1
+    for cn in datorder:
+        i+=1
+        reordered.append(keyedDat[useThisOrder[i]])
+    return reordered
+
+        
+    
+
+def AQ28(aq28fn):
+    #“Definitely agree” or “slightly agree” responses scored 1 point, on the following items:
+    #  1, 2, 4, 5, 6, 7, 9, 12, 13, 16, 18, 19, 20, 21, 22, 23, 26, 33, 35, 39, 41, 42, 43, 45, 46.
+    #“Definitely disagree” or “slightly dis- agree” responses scored 1 point, on the following items:
+    #  3, 8, 10, 11, 14, 15, 17, 24, 25, 27, 28, 29, 30, 31, 32, 34, 36, 37, 38, 40, 44, 47, 48, 49, 50.
+
+    #A   Agree has high score
+    #C
+    #--- SOCIAL SKILLS    
+    #1   1C  "I prefer to do things with others rather than on my own.",
+    #2   11C "I find social situations easy.",
+    #3   13A "I would rather go to a library than to a party.",
+    #4   15C "I find myself drawn more strongly to people than to things.",
+    #5   22A "I find it hard to make new friends.",
+    
+    #6   44C "I enjoy social occasions.",
+    #7   47C "I enjoy meeting new people.",
+    #--- ROUTINE    
+    #8   2A  "I prefer to do things the same way over and over again.",
+    #9   25C "It does not upset me if my daily routine is disturbed.",
+    #10  34C"I enjoy doing things spontaneously.",
+    
+    #11  46A"New situations make me anxious.",
+    #--- SWITCHING
+    #12  4A "I frequently get strongly absorbed in one thing.",
+    #13  10C"I can easily keep track of several different people's conversations.",
+    #14  32C"I find it easy to do more than one thing at once.",
+    #15  37C"If there is an interruption, I can switch back very quickly.",
+    #--- IMAG
+    
+    #16  3C "Trying to imagine something, I find it easy to create a picture in my mind.",
+    #17  8C "Reading a story, I can easily imagine what the characters might look like.",
+    #18  14C"I find making up stories easy.",
+    #19  20A"Reading a story, I find it difficult to work out the character's intentions.",
+    #20  36C"I find it easy to work out what someone is thinking or feeling.",
+    
+    #--- FACT NUMB AND PATT
+    #21  42A"I find it difficult to imagine what it would be like to be someone else.",
+    #22  45A"I find it difficult to work out people's intentions.",
+    #23  50C"I find it easy to play games with children that involve pretending.",
+    #24  6A "I usually notice car number plates or similar strings of information.",
+    #25  9A "I am fascinated by dates.",
+    
+    #26  19A"I am fascinated by numbers.",
+    #27  23A"I notice patterns in things all the time.",
+    #28  41A"I like to collect information about categories of things."
+
+    flip = _N.array([1, 1, 0, 1, 0,
+                     1, 1, 0, 1, 1,
+                     0, 0, 1, 1, 1,
+                     1, 1, 1, 0, 1,
+                     0, 0, 1, 0, 0,
+                     0, 0, 0])
+    #1A   #  strongly agree    = autism
+    #11C  #  strongly disagree = autism
+    #13A  #  strongly agree    = autism
+    #15C
+    #22A
+    
+    #44C
+    #47C
+    #2A 
+    #25C
+    #34C
+    
+    #46A
+    #4A 
+    #10C
+    #32C
+    #37C
+                 
+    #3C
+    #8C 
+    #14C
+    #20A
+    #36C
+    
+    #42A
+    #45A
+    #50C
+    #6A 
+    #9A
+                 
+    #19A
+    #23A
+    #41A
+
+    answers = _N.loadtxt(aq28fn)
+
+    # tot1 = 0
+    # for i in range(28):
+    #     if flip[i] == 0:
+    #         tot1 += answers[i]
+    #     elif flip[i] == 1:
+    #         tot1 += 5 - answers[i]   # 5-1, 5-2, 5-3, 5-4
+
+    ind_scrs = flip*5 + -1*flip*answers + (1-flip)*answers
+
+    return _N.sum(ind_scrs), _N.sum(ind_scrs[0:7]), _N.sum(ind_scrs[7:11]), _N.sum(ind_scrs[11:15]), _N.sum(ind_scrs[15:23]), _N.sum(ind_scrs[23:])
+
+def no_duplicates(lst):
+    duplicate = False
+    for i in range(len(lst)):
+        for j in range(i+1, len(lst)):
+            if lst[i] == lst[j]:
+                duplicate = True
+    return (not duplicate)
+
+def Demo(demo_fn):
+    fp = open(demo_fn, "r")
+    answers = fp.readlines()
+
+    age = -1
+    if answers[1][:-1] == "<18":
+        age = 1
+    elif answers[1][:-1] == "18-24":
+        age = 2
+    elif answers[1][:-1] == "25-29":
+        age = 3
+    elif answers[1][:-1] == "30-34":
+        age = 4
+    elif answers[1][:-1] == "35-39":
+        age = 5
+    elif answers[1][:-1] == "40-44":
+        age = 6
+    elif answers[1][:-1] == "45-49":
+        age = 7
+    elif answers[1][:-1] == "50-54":
+        age = 8
+    elif answers[1][:-1] == "55-59":
+        age = 9
+    elif answers[1][:-1] == "60-64":
+        age = 10
+    elif answers[1][:-1] == "65-69":
+        age = 11
+    elif answers[1][:-1] == "70-74":
+        age = 12
+    elif answers[1][:-1] == "75-79":
+        age = 13
+    elif answers[1][:-1] == "80-84":
+        age = 14
+    elif answers[1][:-1] == "85-89":
+        age = 15
+    elif answers[1][:-1] == ">90":
+        age = 16
+    gen = -1
+    if answers[2][:-1] == "Male":
+        gen = 0
+    elif answers[2][:-1] == "Female":
+        gen = 1
+    elif answers[2][:-1] == "Non-binary":
+        gen = 2
+    Eng = -1        
+    if answers[3][:-1] == "Yes":
+        Eng = 1
+    elif answers[3][:-1] == "No":
+        Eng = 0
+
+    return age, gen, Eng

@@ -1,0 +1,11 @@
+.DS_Store
+*.png
+*.dmp
+*.pdf
+*.key
+*.jpeg
+*.jpg
+*.txt
+*.pyc
+*.tar.gz
+

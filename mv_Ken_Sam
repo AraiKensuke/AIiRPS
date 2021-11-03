@@ -1,0 +1,26 @@
+#!/bin/sh
+
+mkdir ~/Sites/taisen/DATA/TMB2/20210712
+#  Ken files go here
+mkdir ~/Sites/taisen/DATA/TMB2/20210712/20210712_0000-00
+mkdir ~/Sites/taisen/DATA/TMB2/20210712/20210712_0000-00/1
+mkdir ~/Sites/taisen/DATA/TMB2/20210712/20210712_0000-00/2
+#  Sam files go here
+mkdir ~/Sites/taisen/DATA/TMB2/20210712/20210712_0000-05
+mkdir ~/Sites/taisen/DATA/TMB2/20210712/20210712_0000-05/1
+mkdir ~/Sites/taisen/DATA/TMB2/20210712/20210712_0000-05/2
+
+cp ~/Sites/taisen/DATA/EEG1/20200108/20200108_1642-20/ken3.dat ~/Sites/taisen/DATA/TMB2/20210712/20210712_0000-00/1/block1_AI.dat
+cp ~/Sites/taisen/DATA/EEG1/20200109/20200109_1504-32/ken1.dat ~/Sites/taisen/DATA/TMB2/20210712/20210712_0000-00/2/block1_AI.dat
+
+cp ~/Sites/taisen/DATA/EEG1/20201121/20201121_1959-30/sam1.dat ~/Sites/taisen/DATA/TMB2/20210712/20210712_0000-05/1/block1_AI.dat
+cp ~/Sites/taisen/DATA/EEG1/20201121/20201121_2131-38/sam2.dat ~/Sites/taisen/DATA/TMB2/20210712/20210712_0000-05/2/block1_AI.dat
+
+#
+echo "20210712_0000-00
+20210712_0000-05" > tmp1
+
+cat TMB2fns.txt > tmp2
+
+cat tmp1 tmp2 > TMB2fns.txt
+

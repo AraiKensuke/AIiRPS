@@ -19,6 +19,7 @@ import GCoh.eeg_util as _eu
 import AIiRPS.rpsms as rpsms
 import GCoh.preprocess_ver as _ppv
 
+import AIiRPS.constants as _cnst
 from AIiRPS.utils.dir_util import getResultFN
 import GCoh.datconfig as datconf
 
@@ -55,9 +56,13 @@ def depickle(s):
 #dat =      "Apr242020_16_53_03"
 
 
-dat  = "Aug182020_16_44_18"
+#partID  = "20210609_1747-07"
+#partID  = "20210609_1230-28"
+#partID  = "20210609_1248-16"
+#partID = "20210609_1321-35"
+partID = "20200109_1504-32"
 
-#dat     = "Jan092020_15_05_39"#"Apr312020_16_53_03"
+
 #dat     = "Aug182020_16_02_49"
 #dat  = "Aug122020_13_30_23"
 #dat   = "Aug182020_15_45_27"
@@ -71,14 +76,15 @@ dat  = "Aug182020_16_44_18"
 fnt_tck = 15
 fnt_lbl = 17
 
-rpsm_key = rpsms.rpsm_eeg_as_key[dat]
+rpsm_key = rpsms.rpsm_partID_as_key[partID]
 armv_ver = 1
-gcoh_ver =3
+gcoh_ver =2
 
 manual_cluster = False
 
 Fs=300
-win, slideby, dpss_bw      = _ppv.get_win_slideby(gcoh_ver)
+dpss_bw = 7
+win, slideby      = _ppv.get_win_slideby(gcoh_ver)
 
 t_offset = 0  #  ms offset behv_sig_ts
 stop_early   = 0#180
@@ -88,21 +94,25 @@ show_shuffled = False
 process_keyval_args(globals(), sys.argv[1:])
 #######################################################
 
-sections = 7
+sections = 4
 SHFLS= 50
 shfl_type=_SHFL_KEEP_CONT
 
-pikdir     = datconf.getResultFN(datconf._RPS, "%(dir)s/v%(av)d%(gv)d" % {"dir" : dat, "av" : armv_ver, "gv" : gcoh_ver})
-label          = 100
+pikdir     = datconf.getResultFN(datconf._RPS, "%(dir)s/v%(av)d%(gv)d" % {"dir" : rpsm_key, "av" : armv_ver, "gv" : gcoh_ver})
+
+print(pikdir)
+
+
+label          = 71
 outdir         = "%(pd)s/%(lb)d_%(st)s_%(sec)d_%(toff)d" % {"pd" : pikdir, "lb" : label, "st" : shfl_type_str[shfl_type], "toff" : t_offset, "sec" : sections}
 
+print(outdir)
 print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 print("stop_early %d" % stop_early)
 print("t_offset %d" % t_offset)
 print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-
-print("%(od)s/%(rk)s_%(w)d_%(s)d_pkld_dat_v%(av)d%(gv)d_%(lb)d.dmp" % {"rk" : rpsm_key, "w" : win, "s" : slideby, "av" : armv_ver, "gv" : gcoh_ver, "od" : pikdir, "lb" : label})
-lm       = depickle("%(od)s/%(rk)s_%(w)d_%(s)d_pkld_dat_v%(av)d%(gv)d_%(lb)d.dmp" % {"rk" : rpsm_key, "w" : win, "s" : slideby, "av" : armv_ver, "gv" : gcoh_ver, "od" : pikdir, "lb" : label})
+print("%(od)s/%(rk)s_%(w)d_%(s)d_pkld_dat_v%(av)d%(gv)d_%(lb)d.dmp" % {"rk" : partID, "w" : win, "s" : slideby, "av" : armv_ver, "gv" : gcoh_ver, "od" : pikdir, "lb" : label})
+lm       = depickle("%(od)s/%(rk)s_%(w)d_%(s)d_pkld_dat_v%(av)d%(gv)d_%(lb)d.dmp" % {"rk" : partID, "w" : win, "s" : slideby, "av" : armv_ver, "gv" : gcoh_ver, "od" : pikdir, "lb" : label})
 
 if not os.access(outdir, os.F_OK):
      os.mkdir(outdir)
@@ -134,9 +144,7 @@ ignore_stored = False
 ###  BIGCHG
 _behv_sigs_all   = _N.array(lm["fbehv"])
 
-use_behv     = _N.array([_ME_WTL])
-#use_behv     = _N.array([_ME_WTL, _ME_RPS])
-#use_behv     = _N.array([_ME_RPS])
+use_behv     = _N.array([_cnst._WTL, _cnst._HUMRPS, _cnst._AIRPS])
 _behv_sigs   = _N.sum(_behv_sigs_all[use_behv], axis=0)
 
 #_behv_sigs   = _behv_sigs_all[0]
@@ -156,7 +164,13 @@ fs_gcoh = lm["fs"]
 fs_spec = lm["fs_spectrograms"]
 frng = [32, 48]
 
-gk = gauKer(8)
+hnd_dat = lm["hnd_dat"]
+
+mn_mvtm = _N.mean(_N.diff(hnd_dat[:, 3])) / 1000  #  move duration (in seconds)
+num_samples_smooth = (300/slideby * mn_mvtm)  #  how many bins of 1vR is that?
+
+gkInt = int(_N.round(num_samples_smooth))
+gk = gauKer(gkInt)    #  not interested in things of single-move timescales
 gk /= _N.sum(gk)
 
 clrs  = ["black", "orange", "blue", "green", "red", "lightblue", "grey", "pink", "yellow"]
@@ -187,11 +201,14 @@ iH    = irngs[-1]
 minK    = 1
 maxK    = 8
 try_Ks  = _N.arange(minK, maxK+1)
-TRs      = _N.array([1, 4, 10, 20, 30, 40, 50, 60, 70])  # more tries for higher K
+TRs      = _N.array([1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36])
 
-nStates, _rmpd_lab = find_or_retrieve_GMM_labels(datconf._RPS, dat, "%(gf)s_gcoh%(evn)d_%(w)d_%(s)d_v%(av)d%(gv)d" % {"gf" : dat, "w" : win, "s" : slideby, "av" : armv_ver, "gv" : gcoh_ver, "evn" : ev_n}, real_evs[ev_n], iL, iH, fL, fH, armv_ver, gcoh_ver, which=0, try_K=try_Ks, TRs=TRs, manual_cluster=manual_cluster, ignore_stored=ignore_stored, do_pca=True, min_var_expld=0.95)
+nStates, _rmpd_lab = find_or_retrieve_GMM_labels(datconf._RPS, partID, "%(gf)s_gcoh%(evn)d_%(w)d_%(s)d_v%(av)d%(gv)d" % {"gf" : partID, "w" : win, "s" : slideby, "av" : armv_ver, "gv" : gcoh_ver, "evn" : ev_n}, real_evs[ev_n], iL, iH, fL, fH, armv_ver, gcoh_ver, which=0, try_K=try_Ks, TRs=TRs, manual_cluster=manual_cluster, ignore_stored=ignore_stored, do_pca=True, min_var_expld=0.95)
 
 rmpd_lab  = None
+
+gk = gauKer(2)
+gk /= _N.sum(gk)
 
 yLo = -0.6
 yHi =  0.6
@@ -210,20 +227,21 @@ for dat_mod in [[False, False], [True, False], [False, True], [True, True]]:
           srvrs = "_hi"
 
      if rvrs and not hlfs_intrchg:
-          #bigchg_behv_sigs = _N.array(_bigchg_behv_sigs[::-1])
-          bigchg_behv_sigs = _N.array(_bigchg_behv_sigs)
-          _N.random.shuffle(bigchg_behv_sigs)
+          bigchg_behv_sigs = _N.array(_bigchg_behv_sigs[::-1])
+          #bigchg_behv_sigs = _N.array(_bigchg_behv_sigs)
+          #_N.random.shuffle(bigchg_behv_sigs)
      elif not rvrs and hlfs_intrchg:
-          #bigchg_behv_sigs = _N.array(_bigchg_behv_sigs[hlfL:].tolist() + _bigchg_behv_sigs[0:hlfL].tolist())
-          bigchg_behv_sigs = _N.array(_bigchg_behv_sigs)
-          _N.random.shuffle(bigchg_behv_sigs)
+          bigchg_behv_sigs = _N.array(_bigchg_behv_sigs[hlfL:].tolist() + _bigchg_behv_sigs[0:hlfL].tolist())
+          #bigchg_behv_sigs = _N.array(_bigchg_behv_sigs)
+          #_N.random.shuffle(bigchg_behv_sigs)
      elif rvrs and hlfs_intrchg:
-          #bigchg_behv_sigs = _N.array(_N.array(_bigchg_behv_sigs[hlfL:].tolist() + _bigchg_behv_sigs[0:hlfL].tolist())[::-1])
-          bigchg_behv_sigs = _N.array(_bigchg_behv_sigs)
-          _N.random.shuffle(bigchg_behv_sigs)
+          bigchg_behv_sigs = _N.array(_N.array(_bigchg_behv_sigs[hlfL:].tolist() + _bigchg_behv_sigs[0:hlfL].tolist())[::-1])
+          #bigchg_behv_sigs = _N.array(_bigchg_behv_sigs)
+          #_N.random.shuffle(bigchg_behv_sigs)
      else:
           bigchg_behv_sigs    = _bigchg_behv_sigs
 
+     #bigchg_behv_sigs = _N.convolve(bigchg_behv_sigs, gk, mode="same")
      all_behv.append(_N.array(bigchg_behv_sigs))
      
      #bigchg_behv_sigs    = _bigchg_behv_sigs[::-1] if rvrs else _bigchg_behv_sigs
@@ -232,6 +250,8 @@ for dat_mod in [[False, False], [True, False], [False, True], [True, True]]:
 
      all_acs       = []
      all_shps      = []
+
+     
 
      xcs  = _N.empty((sections, SHFLS+1, 2*lags+1))
      shps = _N.empty((sections, SHFLS+1), dtype=_N.int)
@@ -266,7 +286,9 @@ for dat_mod in [[False, False], [True, False], [False, True], [True, True]]:
      print(be_inds)
 
      fig  = _plt.figure(figsize=(3.*nStates, sections*2.5))
-     _plt.suptitle("%(dat)s   ev %(evn)d  frng %(fr)s  %(rvr)s  %(st)s" % {"fr" : str(frng), "dat" : dat, "evn" : ev_n, "rvr" : srvrs, "st" : shfl_type_str[shfl_type]})
+     pc, pv = _ss.pearsonr(bigchg_behv_sigs, _bigchg_behv_sigs)
+     
+     _plt.suptitle("%(dat)s   ev %(evn)d  frng %(fr)s  %(rvr)s  %(st)s   pc  %(pc).4f    pv  %(pv).4f" % {"fr" : str(frng), "dat" : partID, "evn" : ev_n, "rvr" : srvrs, "st" : shfl_type_str[shfl_type], "pc" : pc, "pv" : pv})
 
      time_lags = _N.linspace(-(slideby/300)*lags, lags*(slideby/300), 2*lags+1)
      for ns in range(nStates):
@@ -369,13 +391,14 @@ for dat_mod in [[False, False], [True, False], [False, True], [True, True]]:
           #all_shps.append(_N.array(shps))
           all_shps.append(_N.array(number_state_obsvd))
 
-     scov = ""
-     for ub in range(len(use_behv)-1):
-          scov += covs[use_behv[ub]] + ","
-     scov += covs[use_behv[-1]]
+     #scov = ""
+     #for ub in range(len(use_behv)-1):
+     #     scov += covs[use_behv[ub]] + ","
+     #scov += covs[use_behv[-1]]
+     scov = "ALL"
      fig.subplots_adjust(wspace=0.4, hspace=0.3, left=0.08, bottom=0.12)
 
-     _plt.savefig("%(od)s/xcorr_out_%(evn)d_%(w)d_%(sl)d_%(1)d_%(2)d_v%(av)d%(gv)d_%(lb)d_%(ub)s_%(sr)s" % {"1" : fL, "2" : fH, "dat" : dat, "w" : win, "sl" : slideby, "av" : armv_ver, "gv" : gcoh_ver, "od" : outdir, "evn" : ev_n, "sr" : srvrs, "ub" : scov, "lb" : label}, transparent=False)
+     _plt.savefig("%(od)s/xcorr_out_%(evn)d_%(w)d_%(sl)d_%(1)d_%(2)d_v%(av)d%(gv)d_%(lb)d_%(ub)s_%(sr)s" % {"1" : fL, "2" : fH, "dat" : partID, "w" : win, "sl" : slideby, "av" : armv_ver, "gv" : gcoh_ver, "od" : outdir, "evn" : ev_n, "sr" : srvrs, "ub" : scov, "lb" : label}, transparent=False)
 
      pickle_put = {}
      pickle_put["all_xcs_r"] = all_xcs_r
@@ -386,8 +409,8 @@ for dat_mod in [[False, False], [True, False], [False, True], [True, True]]:
      pickle_put["SHFLS"] = SHFLS
 
      print("*************************xcorr_out")
-     print("%(od)s/xcorr_out_%(evn)d_%(w)d_%(sl)d_%(1)d_%(2)d_v%(av)d%(gv)d%(sr)s.dmp" % {"1" : fL, "2" : fH, "dat" : dat, "w" : win, "sl" : slideby, "av" : armv_ver, "gv" : gcoh_ver, "od" : outdir, "evn" : ev_n, "sr" : srvrs})
-     dmp = open("%(od)s/xcorr_out_%(evn)d_%(w)d_%(sl)d_%(1)d_%(2)d_v%(av)d%(gv)d_%(lb)d%(sr)s.dmp" % {"1" : fL, "2" : fH, "dat" : dat, "w" : win, "sl" : slideby, "av" : armv_ver, "gv" : gcoh_ver, "od" : outdir, "evn" : ev_n, "sr" : srvrs, "lb" : label}, "wb")
+     print("%(od)s/xcorr_out_%(evn)d_%(w)d_%(sl)d_%(1)d_%(2)d_v%(av)d%(gv)d%(sr)s.dmp" % {"1" : fL, "2" : fH, "dat" : partID, "w" : win, "sl" : slideby, "av" : armv_ver, "gv" : gcoh_ver, "od" : outdir, "evn" : ev_n, "sr" : srvrs})
+     dmp = open("%(od)s/xcorr_out_%(evn)d_%(w)d_%(sl)d_%(1)d_%(2)d_v%(av)d%(gv)d_%(lb)d%(sr)s.dmp" % {"1" : fL, "2" : fH, "dat" : partID, "w" : win, "sl" : slideby, "av" : armv_ver, "gv" : gcoh_ver, "od" : outdir, "evn" : ev_n, "sr" : srvrs, "lb" : label}, "wb")
      pickle.dump(pickle_put, dmp, -1)
      dmp.close()
 
@@ -409,65 +432,66 @@ for dat_mod in [[False, False], [True, False], [False, True], [True, True]]:
 
 
 
-SHFLS=0
-stateBin          = _N.zeros(L_gcoh, dtype=_N.int)
+# SHFLS=0
+# stateBin          = _N.zeros(L_gcoh, dtype=_N.int)
+
+# # beginInd        = _N.where(ts_gcoh < bigchg_behv_sig_ts[0]/1000)[0][-1]
+# # endInd          = _N.where(ts_gcoh > bigchg_behv_sig_ts[-1]/1000)[0][0]
+# # endIndM         = beginInd + (endInd - beginInd)//2
 
 # beginInd        = _N.where(ts_gcoh < bigchg_behv_sig_ts[0]/1000)[0][-1]
 # endInd          = _N.where(ts_gcoh > bigchg_behv_sig_ts[-1]/1000)[0][0]
-# endIndM         = beginInd + (endInd - beginInd)//2
 
-beginInd        = _N.where(ts_gcoh < bigchg_behv_sig_ts[0]/1000)[0][-1]
-endInd          = _N.where(ts_gcoh > bigchg_behv_sig_ts[-1]/1000)[0][0]
+# be_inds = _N.array(_N.linspace(beginInd, endInd, sections+1), dtype=_N.int)
+# print("!!!!!!!!!!!!!!!!!!!!")
+# print(be_inds)
 
-be_inds = _N.array(_N.linspace(beginInd, endInd, sections+1), dtype=_N.int)
-print("!!!!!!!!!!!!!!!!!!!!")
-print(be_inds)
+# fig  = _plt.figure(figsize=(3.*nStates, sections*2.5))
+# _plt.suptitle("%(dat)s   ev %(evn)d  frng %(fr)s  %(rvr)s" % {"fr" : str(frng), "dat" : partID, "evn" : ev_n, "rvr" : srvrs})
 
-fig  = _plt.figure(figsize=(3.*nStates, sections*2.5))
-_plt.suptitle("%(dat)s   ev %(evn)d  frng %(fr)s  %(rvr)s" % {"fr" : str(frng), "dat" : dat, "evn" : ev_n, "rvr" : srvrs})
+# time_lags = _N.linspace(-(slideby/300)*lags, lags*(slideby/300), 2*lags+1)
+# for ns in range(nStates):
+#      ac_this_state = []
+#      rmpd_lab = _rmpd_lab
+#      stateInds = _N.where(rmpd_lab == ns)[0]
 
-time_lags = _N.linspace(-(slideby/300)*lags, lags*(slideby/300), 2*lags+1)
-for ns in range(nStates):
-     ac_this_state = []
-     rmpd_lab = _rmpd_lab
-     stateInds = _N.where(rmpd_lab == ns)[0]
+#      stateBin[:] = 0
+#      stateBin[stateInds] = 1   #  neural signal
 
-     stateBin[:] = 0
-     stateBin[stateInds] = 1   #  neural signal
+#      for hlf in range(sections):
+#           fig.add_subplot(sections, nStates, hlf*nStates+ns+1)
+#           i0 = be_inds[hlf]
+#           i1 = be_inds[hlf+1]
 
-     for hlf in range(sections):
-          fig.add_subplot(sections, nStates, hlf*nStates+ns+1)
-          i0 = be_inds[hlf]
-          i1 = be_inds[hlf+1]
+#           ac = _eu.autocorrelate_whatsthisfor(stateBin[i0:i1], lags, pieces=1)
+#           ac_this_state.append(_N.array(ac))
+#           _plt.plot(time_lags, ac, color="black", lw=1)
+#           _plt.ylim(-0.2, 0.4)
+#           _plt.xlim(-lags_sec, lags_sec)
+#           shp_on = _N.where(stateBin[i0:i1] == 1)[0]
+#           _plt.scatter(xs[shp_on], _N.ones(shp_on.shape[0])*-0.18, color="red", s=4)
+#           if hlf == sections - 1:
+#                _plt.xticks(ticks=xticksD, fontsize=fnt_tck)
+#           else:
+#                _plt.xticks(ticks=xticksD, labels=([""] * len(xticksD)), fontsize=fnt_tck)
 
-          ac = _eu.autocorrelate_whatsthisfor(stateBin[i0:i1], lags, pieces=1)
-          ac_this_state.append(_N.array(ac))
-          _plt.plot(time_lags, ac, color="black", lw=1)
-          _plt.ylim(-0.2, 0.4)
-          _plt.xlim(-lags_sec, lags_sec)
-          shp_on = _N.where(stateBin[i0:i1] == 1)[0]
-          _plt.scatter(xs[shp_on], _N.ones(shp_on.shape[0])*-0.18, color="red", s=4)
-          if hlf == sections - 1:
-               _plt.xticks(ticks=xticksD, fontsize=fnt_tck)
-          else:
-               _plt.xticks(ticks=xticksD, labels=([""] * len(xticksD)), fontsize=fnt_tck)
+#           _plt.axvline(x=-20, ls=":", color="grey", lw=1)
+#           _plt.axvline(x=-10, ls=":", color="grey", lw=1)
+#           _plt.axvline(x=0, ls=":", color="grey", lw=1)
+#           _plt.axvline(x=10, ls=":", color="grey", lw=1)
+#           _plt.axvline(x=20, ls=":", color="grey", lw=1)
+#           _plt.axhline(y=0, ls=":", color="grey", lw=1)
+#      all_acs.append(ac_this_state)
 
-          _plt.axvline(x=-20, ls=":", color="grey", lw=1)
-          _plt.axvline(x=-10, ls=":", color="grey", lw=1)
-          _plt.axvline(x=0, ls=":", color="grey", lw=1)
-          _plt.axvline(x=10, ls=":", color="grey", lw=1)
-          _plt.axvline(x=20, ls=":", color="grey", lw=1)
-          _plt.axhline(y=0, ls=":", color="grey", lw=1)
-     all_acs.append(ac_this_state)
+# fig.subplots_adjust(wspace=0.4, hspace=0.3, left=0.08, bottom=0.12)
+# _plt.savefig("%(od)s/acorr_out_%(evn)d_%(w)d_%(sl)d_%(1)d_%(2)d_v%(av)d%(gv)d_%(lb)d%(sr)s" % {"1" : fL, "2" : fH, "dat" : partID, "w" : win, "sl" : slideby, "av" : armv_ver, "gv" : gcoh_ver, "od" : outdir, "evn" : ev_n, "sr" : srvrs, "lb" : label}, transparent=True)
 
-fig.subplots_adjust(wspace=0.4, hspace=0.3, left=0.08, bottom=0.12)
-_plt.savefig("%(od)s/acorr_out_%(evn)d_%(w)d_%(sl)d_%(1)d_%(2)d_v%(av)d%(gv)d_%(lb)d%(sr)s" % {"1" : fL, "2" : fH, "dat" : dat, "w" : win, "sl" : slideby, "av" : armv_ver, "gv" : gcoh_ver, "od" : outdir, "evn" : ev_n, "sr" : srvrs, "lb" : label}, transparent=True)
+# pickle_put = {}
+# pickle_put["all_acs"] = all_acs
+# pickle_put["time_lags"] = time_lags
 
-pickle_put = {}
-pickle_put["all_acs"] = all_acs
-pickle_put["time_lags"] = time_lags
+# dmp = open("%(od)s/acorr_out_%(evn)d_%(w)d_%(sl)d_%(1)d_%(2)d_v%(av)d%(gv)d_%(lb)d%(sr)s.dmp" % {"1" : fL, "2" : fH, "dat" : partID, "w" : win, "sl" : slideby, "av" : armv_ver, "gv" : gcoh_ver, "od" : outdir, "evn" : ev_n, "sr" : srvrs, "lb" : label}, "wb")
+# pickle.dump(pickle_put, dmp, -1)
+# dmp.close()
 
-dmp = open("%(od)s/acorr_out_%(evn)d_%(w)d_%(sl)d_%(1)d_%(2)d_v%(av)d%(gv)d_%(lb)d%(sr)s.dmp" % {"1" : fL, "2" : fH, "dat" : dat, "w" : win, "sl" : slideby, "av" : armv_ver, "gv" : gcoh_ver, "od" : outdir, "evn" : ev_n, "sr" : srvrs, "lb" : label}, "wb")
-pickle.dump(pickle_put, dmp, -1)
-dmp.close()
 

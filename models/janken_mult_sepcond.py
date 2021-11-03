@@ -8,7 +8,7 @@ import matplotlib.pyplot as _plt
 import os
 import sys
 import AIiRPS.models.labels as labels
-from cmdlineargs import process_keyval_args
+from ka_tools.cmdlineargs import process_keyval_args
 import multinomial_gibbs as _mg
 
 from AIiRPS.utils.dir_util import getResultFN
@@ -92,6 +92,7 @@ dat_fn="20May29-1419-14"
 #dat_fn="20Nov22-1108-25"
 #dat_fn="20Nov21-2131-38"
 #dat_fn="20Nov21-1959-30"
+dat_fn="May262021_15_05_54"
 
 random_walk = True
 flip_human_AI=False
@@ -108,7 +109,8 @@ sran   = ""
 
 s_flip = "_flip" if flip_human_AI else ""
 if not know_gt: 
-    _hnd_dat = _rd.return_hnd_dat(dat_fn, flip_human_AI=flip_human_AI)    
+    #_hnd_dat = _rd.return_hnd_dat(dat_fn, flip_human_AI=flip_human_AI)
+    _hnd_dat = _rd.return_hnd_dat(dat_fn, flip_human_AI=flip_human_AI, has_useragent=True, has_start_and_end_times=True, has_constructor=True)
 else:
     _hnd_dat     = _N.loadtxt("/Users/arai/nctc/Workspace/AIiRPS_SimDAT/rpsm_%s.dat" % dat_fn, dtype=_N.int)
     lmGT = depickle("/Users/arai/nctc/Workspace/AIiRPS_SimDAT/rpsm_%s.dmp" % dat_fn)

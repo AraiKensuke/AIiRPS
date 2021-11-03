@@ -8,6 +8,8 @@ import pickle
 import os
 import GCoh.preprocess_ver as _ppv
 import rpsms
+import glob
+import AIiRPS.constants as _cnst
 
 from AIiRPS.utils.dir_util import getResultFN
 
@@ -23,7 +25,7 @@ _R      = 0
 _P      = 1
 _S      = 2
 
-fns     = ["ME,WTL", "ME,RPS"]
+fns     = ["WTL", "HUMRPS", "AIRPS"]
 
 def depickle(s):
      import pickle
@@ -56,16 +58,29 @@ armv_ver
 GCoh_ver
 savgol_win
 """
-dats = {"20Jan09-1504-32" : ["12:00:00", "12:00:00", 14, 4, 3, 5],
-        #"20Jan09-1504-32" : ["12:00:00", "12:00:00", 5, 4, 3, 5],
-        "20Aug18-1624-01" : ["12:00:00", "12:00:01", 100, 1, 3, 5],
-        "20Aug18-1603-42" : ["12:00:00", "12:00:01", 8, 1, 3, 5],
-        "20Jan08-1703-13" : ["12:00:00", "12:00:01", 13, 1, 3, 5],
-        "20Aug18-1644-09" : ["12:00:00", "12:00:01", 100, 1, 3, 5],
-        "20Aug18-1546-13" : ["12:00:00", "12:00:01", 13, 1, 3, 5],
-        "20Aug12-1252-50" : ["12:00:00", "12:00:01", 13, 1, 3, 5],
-        "20Aug12-1331-06" : ["12:00:00", "12:00:01", 14, 1, 3, 5]
-}
+
+gv = 2
+av  = 1
+sw = None
+lab = 71
+#  participantID as rpsm_key
+params4partID = {"20200109_1504-32": ["12:00:00", "12:00:01", lab, av, gv, sw, [_cnst._WTL, _cnst._HUMRPS, _cnst._AIRPS]],
+                 "20200108_1642-20": ["12:00:00", "12:00:01", lab, av, gv, sw, [_cnst._WTL, _cnst._HUMRPS, _cnst._AIRPS]],
+                 "20200812_1252-50": ["12:00:00", "12:00:01", lab, av, gv, sw, [_cnst._WTL, _cnst._HUMRPS, _cnst._AIRPS]],
+                 "20200812_1331-06": ["12:00:00", "12:00:01", lab, av, gv, sw, [_cnst._WTL, _cnst._HUMRPS, _cnst._AIRPS]],
+                 "20200818_1546-13": ["12:00:00", "12:00:01", lab, av, gv, sw, [_cnst._WTL, _cnst._HUMRPS, _cnst._AIRPS]],
+                 "20200818_1603-42": ["12:00:00", "12:00:01", lab, av, gv, sw, [_cnst._WTL, _cnst._HUMRPS, _cnst._AIRPS]],
+                 "20200818_1624-01": ["12:00:00", "12:00:01", lab, av, gv, sw, [_cnst._WTL, _cnst._HUMRPS, _cnst._AIRPS]],
+                 "20200818_1644-09": ["12:00:00", "12:00:01", lab, av, gv, sw, [_cnst._WTL, _cnst._HUMRPS, _cnst._AIRPS]],
+                 "20210609_1747-07": ["12:00:00", "12:00:01", lab, av, gv, sw, [_cnst._WTL, _cnst._HUMRPS, _cnst._AIRPS]],
+                 "20210609_1230-28": ["12:00:00", "12:00:01", lab, av, gv, sw, [_cnst._WTL, _cnst._HUMRPS, _cnst._AIRPS]],
+                 "20210609_1248-16": ["12:00:00", "12:00:01", lab, av, gv, sw, [_cnst._WTL, _cnst._HUMRPS, _cnst._AIRPS]],
+                 "20210609_1321-35": ["12:00:00", "12:00:01", lab, av, gv, sw, [_cnst._WTL, _cnst._HUMRPS, _cnst._AIRPS]],
+                 "20210526_1318-12": ["12:00:00", "12:00:01", lab, av, gv, sw, [_cnst._WTL, _cnst._HUMRPS, _cnst._AIRPS]],
+                 "20210526_1358-27": ["12:00:00", "12:00:01", lab, av, gv, sw, [_cnst._WTL, _cnst._HUMRPS, _cnst._AIRPS]],
+                 "20210526_1416-25": ["12:00:00", "12:00:01", lab, av, gv, sw, [_cnst._WTL, _cnst._HUMRPS, _cnst._AIRPS]],
+                 "20210526_1503-39": ["12:00:00", "12:00:01", lab, av, gv, sw, [_cnst._WTL, _cnst._HUMRPS, _cnst._AIRPS]]}
+#        "20210609_1710-28" : ["12:00:00", "12:00:01", 14, 1, 3, 5]
 
 #dats = {"rpsm_20Jan09-1500-00.dat" : ["Jan092020_15_00_35_artfctrmvd.dat", "12:00:00", "12:00:00"]}
 #        "rpsm_20Apr10-2307-53.dat" : "Apr102020_23_08_48_artfctrmvd.dat",
@@ -92,7 +107,7 @@ def overlapping_window_center_times(N, binsz, shft, fs_eeg):
 
     return _N.array(mid_win_t)
 
-def pkg_all_data(rpsm_key):
+def pkg_all_data(partID):
     """
     d_reprtd_start:  delay RPSM game start relative to DSi - as calculated by reported JS start time and DSi start time.
     dt_sys_clks:  how much system times are off.
@@ -109,21 +124,27 @@ als
     if d_start < 0, RPSM started BEFORE EEG
     """
     
-    print("rpsm_key   %s" % rpsm_key)
+    print("partID   %s" % partID)
     dat_pkg         = {}
-    dsi_fn          = rpsms.rpsm_rps_as_key[rpsm_key]
+    dsi_fn          = rpsms.rpsm_partID_as_key[partID]
 
-    same_time_RPSM  = dats[rpsm_key][0]   #  from calibration.html 
-    same_time_EEG   = dats[rpsm_key][1]   #  from calibration.html 
+    same_time_RPSM  = params4partID[partID][0]   #  from calibration.html 
+    same_time_EEG   = params4partID[partID][1]   #  from calibration.html 
 
-    reprtd_start_RPSM_str  = rpsm_key[8:15]     #  from key name
+    rpsm_fn         = "rpsm_%s.dat" % partID
+
+    _hnd_dat, start_time, end_time            = _rt.return_hnd_dat(partID, has_useragent=True, has_start_and_end_times=True, has_constructor=True)
+
+    reprtd_start_RPSM_str  = start_time#rpsm_key[8:15]     #  from key name
     if dsi_fn is not None:
          reprtd_start_EEG_str   = dsi_fn[10:18]
 
-    rpsm_fn         = "rpsm_%s.dat" % rpsm_key
-    rpsm_file       = "~/Sites/janken/taisen_data/%s" % rpsm_fn
+    day = partID[0:8]
+    time= partID[9:]
+    print(day)
+    print(time)
+    eeg_dir       = "~/Sites/taisen/DATA/EEG1/%(day)s/%(dt)s/" % {"day" : day, "dt" : partID}
 
-    _hnd_dat            = _rt.return_hnd_dat(rpsm_key)
     trials          = _hnd_dat.shape[0]
     print("!!!!!  trials %d" % trials)
 
@@ -133,14 +154,14 @@ als
     tr0     = 0 
     tr1     = trials
 
-    label   = dats[rpsm_key][2]
+    label   = params4partID[partID][2]
     #covWTLRPS     = dats[rpsm_key][6] if dats[rpsm_key][6] is not None else [_N.array([_W, _T, _L]), _N.array([_R, _P, _S])]
     #covWTLRPS     = dats[rpsm_key][6] if dats[rpsm_key][6] is not None else [_N.array([_W, _T, _L])]
 
-    armv_ver = dats[rpsm_key][3]
-    gcoh_ver = dats[rpsm_key][4]
+    armv_ver = params4partID[partID][3]
+    gcoh_ver = params4partID[partID][4]
 
-    win_spec, slideby_spec, dpss_bw      = _ppv.get_win_slideby(gcoh_ver)
+    win_spec, slideby_spec      = _ppv.get_win_slideby(gcoh_ver)
     win_gcoh        = win_spec
     slideby_gcoh    = slideby_spec
 
@@ -171,58 +192,66 @@ als
     dat_pkg["behv"]              = []
     dat_pkg["behv_ts"]           = []
 
-    savgol_win                   = dats[rpsm_key][5]
+    savgol_win                   = params4partID[partID][5]
     #%(dat)s,%(rel)s,%(cov)s%(ran)s
     sum_chosen_behv_sig          = None#_N.zeros((len(behv_list), Tm1))
     sigcov_behv_sig              = None
     sigcov_behv_fsig              = None
+    behv_list                    = _N.array([0, 1, 2], _N.int)
     fig = _plt.figure(figsize=(10, 8))
-    for bi in range(1):
-         covWTLRPS = _N.array([_W, _T, _L])# if behv_list[bi] == _ME_WTL else _N.array([_R, _P, _S])
-         sig_cov   = _ME_WTL#behv_list[bi]
-         behv_file = fns[sig_cov]
-         print(getResultFN("%(rpsm)s/%(lb)d/%(fl)s.dmp" % {"rpsm" : rpsm_key, "fl" : behv_file, "lb" : label}))
-         dmp       = depickle(getResultFN("%(rpsm)s/%(lb)d/%(fl)s.dmp" % {"rpsm" : rpsm_key, "fl" : behv_file, "lb" : label}))
+    for bi in range(3):
+         #covWTLRPS = _N.array([_W, _T, _L])# if behv_list[bi] == _ME_WTL else _N.array([_R, _P, _S])
+        if behv_list[bi] == _cnst._WTL:
+            sig_cov = _N.array([_W, _T, _L])
+        else:
+            sig_cov = _N.array([_R, _P, _S])
+        sig_cov   = behv_list[bi]
+        behv_file = fns[bi]
+        print(getResultFN("%(rpsm)s/%(lb)d/%(fl)s.dmp" % {"rpsm" : partID, "fl" : behv_file, "lb" : label}))
+        dmp       = depickle(getResultFN("%(rpsm)s/%(lb)d/%(fl)s.dmp" % {"rpsm" : partID, "fl" : behv_file, "lb" : label}))
 
-         cond_probs = dmp["cond_probs"]
-         Tm1     = cond_probs.shape[2]    # because AR1 filter is shorter by 1
-         #  dNGS then should at most be Tm1 - 1
-         print("trials %(tr)d   Tm1 %(Tm1)d" % {"tr" : trials, "Tm1" : Tm1})
 
-         if sigcov_behv_sig is None:
-              #  Tm1 - 1 (because derivative)
-              sigcov_behv_sig  = _N.zeros((1, Tm1-1))
-              sigcov_behv_fsig = _N.zeros((1, Tm1-1))
+        cond_probs = dmp["cond_probs"]
+        cond_probs = cond_probs.reshape((3, 3, cond_probs.shape[1]))
+        Tm1     = cond_probs.shape[2]    # because AR1 filter is shorter by 1
+        #  dNGS then should at most be Tm1 - 1
+        print("trials %(tr)d   Tm1 %(Tm1)d" % {"tr" : trials, "Tm1" : Tm1})
+        if sigcov_behv_sig is None:
+            #  Tm1 - 1 (because derivative)
+            sigcov_behv_sig  = _N.zeros((3, Tm1-1))
+        sigcov_behv_fsig = _N.zeros((3, Tm1-1))
+        
+        prob_mvs  = cond_probs
+        #prob_mvs[1] *= 0.001   #  make TIE condition contribution small
+        prob_fmvs = _N.zeros((3, 3, Tm1))
 
-         print("sigcov_behv_sig  shape")
-         print(sigcov_behv_sig.shape)
-         prob_mvs  = cond_probs
-         prob_fmvs = _N.zeros((3, 3, Tm1))
-         print("cond_probs  shape")
-         print(cond_probs.shape)
-         print("Tm1   %d" % Tm1)
-         print("prob_mvs shape")
-         print(prob_mvs.shape)
 
-         for iw in range(3):
+        for iw in range(3):
             for ix in range(3):
-                 prob_fmvs[iw, ix] = savgol_filter(prob_mvs[iw, ix], savgol_win, 3) # window size 51, polynomial ord
+                # if savgol_win is not None:
+                #     prob_fmvs[iw, ix] = savgol_filter(prob_mvs[iw, ix], savgol_win, 3) # window size 51, polynomial ord
+#                else:
+                prob_fmvs[iw, ix] = prob_mvs[iw, ix]
 
-         these_covs = covWTLRPS
+        these_covs = _N.array([0, 1, 2])
          
-         #  sum over WTL condition first
-         sigcov_behv_sig[bi] = _N.sum(_N.sum(_N.abs(_N.diff(prob_mvs[these_covs], axis=2)), axis=1), axis=0)
-         sigcov_behv_fsig[bi] = _N.sum(_N.sum(_N.abs(_N.diff(prob_fmvs[these_covs], axis=2)), axis=1), axis=0)
-         n = 0
+        #  sum over WTL condition first
+        sigcov_behv_sig[bi] = _N.sum(_N.sum(_N.abs(_N.diff(prob_mvs[these_covs], axis=2)), axis=1), axis=0)
+        sigcov_behv_fsig[bi] = _N.sum(_N.sum(_N.abs(_N.diff(prob_fmvs[these_covs], axis=2)), axis=1), axis=0)
+        n = 0
+        
+        fig.add_subplot(3, 2, bi*2+1)
+        bhv = sigcov_behv_sig[bi]
+        _plt.acorr(bhv - _N.mean(bhv), maxlags=30)
+        _plt.grid()
+        fig.add_subplot(3, 2, bi*2+2)
+        fbhv = sigcov_behv_fsig[bi]
+        _plt.acorr(fbhv - _N.mean(fbhv),  maxlags=30)
+        _plt.grid()
 
-         fig.add_subplot(3, 2, bi*2+1)
-         bhv = sigcov_behv_sig[bi]
-         _plt.acorr(bhv - _N.mean(bhv), maxlags=30)
-         _plt.grid()
-         fig.add_subplot(3, 2, bi*2+2)
-         fbhv = sigcov_behv_fsig[bi]
-         _plt.acorr(fbhv - _N.mean(fbhv),  maxlags=30)
-         _plt.grid()
+        print("..................................  %d" % bi)
+        print(sigcov_behv_sig[bi])
+        print(sigcov_behv_fsig[bi])
     # bhv1 = sigcov_behv_sig[0]
     # bhv2 = sigcov_behv_sig[1]
     # fig.add_subplot(3, 2, 5)
@@ -232,7 +261,9 @@ als
     # fig.add_subplot(3, 2, 6)
     # _plt.xcorr(bhv1 - _N.mean(bhv1), bhv2 - _N.mean(bhv2), maxlags=30)
 
+    print(sigcov_behv_sig)    
     dat_pkg["behv"]  = sigcov_behv_sig
+    print(sigcov_behv_fsig)
     dat_pkg["fbehv"]  = sigcov_behv_fsig
     dat_pkg["savgol_win"] = savgol_win
     #  It is 2: because derivative of filter signal.
@@ -249,7 +280,8 @@ als
     # combine this with time stamp
 
     ###########  Reported start times of RPS, EEG
-    reprtd_start_RPSM  = int(reprtd_start_RPSM_str[0:2])*3600 + 60*int(reprtd_start_RPSM_str[2:4]) + int(reprtd_start_RPSM_str[5:7])
+    print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+    reprtd_start_RPSM  = int(reprtd_start_RPSM_str[8:10])*3600 + 60*int(reprtd_start_RPSM_str[10:12]) + int(reprtd_start_RPSM_str[13:15])
     if gcoh_fn is not None:
          reprtd_start_EEG   = int(reprtd_start_EEG_str[0:2])*3600  + 60*int(reprtd_start_EEG_str[3:5])  + int(reprtd_start_EEG_str[6:8])
     else:
@@ -363,9 +395,13 @@ als
 
 #  THESE KEYS ARE RPS GAME DATA NAMES
 #for rpsm_key in ["20Jan08-1703-13"]:
-for rpsm_key in ["20Jan09-1504-32"]:
-#for rpsm_key in ["20Aug12-1331-06"]:
 #for rpsm_key in ["20Jan09-1504-32"]:
+for partID in ["20210609_1230-28", "20210609_1248-16", "20210609_1321-35", "20210609_1747-07", "20210526_1318-12", "20210526_1358-27", "20210526_1416-25", "20210526_1503-39", "20200108_1642-20", "20200109_1504-32", "20200812_1331-06", "20200812_1252-50", "20200818_1546-13", "20200818_1603-42", "20200818_1624-01", "20200818_1644-09"]:
+#for partID in ["20210609_1248-16"]:    
+#for partID in ["20210609_1747-07"]:
+#for partID in [
+#for rpsm_key in ["20Aug12-1331-06"]:
+#for partID in ["20200109_1504-32"]:
 #for rpsm_key in ["20Aug12-1252-50", "20Jan09-1504-32", "20Aug18-1644-09", "20Aug18-1624-01", "20Aug12-1331-06"]:
 #for rpsm_key in ["20Jan08-1703-13"]:#, "20Jan09-1504-32", "20Aug12-1252-50", "2Aug12-1331-06", "20Aug18-1546-13"]:
 #for rpsm_key in ["20Aug12-1252-50"]:
@@ -374,12 +410,14 @@ for rpsm_key in ["20Jan09-1504-32"]:
 #for rpsm_key in ["20Aug18-1603-42"]:
 #for rpsm_key in ["20Aug18-1624-01"]:
 #for rpsm_key in ["20Aug18-1603-42"]:
-    savedir, dat_pkg, win_gcoh, slideby_gcoh, armv_ver, gcoh_ver, label = pkg_all_data(rpsm_key)  #  first nperseg/2 points are constant
+#for partID in ["20200818_1546-13", "20200818_1603-42", "20200818_1624-01", "20200818_1644-09"]:
+#for partID in ["20200108_1642-20", "20200812_1331-06"]:
+    savedir, dat_pkg, win_gcoh, slideby_gcoh, armv_ver, gcoh_ver, label = pkg_all_data(partID)  #  first nperseg/2 points are constant
     #pkg_all_data(rpsm_key)  #  first nperseg/2 points are constant
 
-
-    dmp = open("%(sd)s/%(rk)s_%(w)d_%(s)d_pkld_dat_v%(av)d%(gv)d_%(lb)d.dmp" % {"rk" : rpsm_key, "w" : win_gcoh, "s" : slideby_gcoh, "av" : armv_ver, "gv" : gcoh_ver, "sd" : savedir, "lb" : label}, "wb")
-         
+    #  combine
+    pklfn = "%(sd)s/%(rk)s_%(w)d_%(s)d_pkld_dat_v%(av)d%(gv)d_%(lb)d.dmp" % {"rk" : partID, "w" : win_gcoh, "s" : slideby_gcoh, "av" : armv_ver, "gv" : gcoh_ver, "sd" : savedir, "lb" : label}
+    dmp = open(pklfn, "wb")
 
     pickle.dump(dat_pkg, dmp, -1)
     dmp.close()
