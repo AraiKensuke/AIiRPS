@@ -10,6 +10,8 @@ import pickle
 import AIiRPS.constants as _AIconst
 import scipy.stats as _ss
 import glob
+import AIiRPS.simulation.simulate_prcptrn as sim_prc
+
 
 def depickle(s):
      import pickle
@@ -70,36 +72,39 @@ for datetm in datetms:
 
         td, start_time, end_time, UA, cnstr, inp_meth, ini_percep, fin_percep = _rt.return_hnd_dat(datetm, has_useragent=True, has_start_and_end_times=True, has_constructor=True, expt=expt, visit=visit)
 
-        # ngs, ngsSTSW, all_tds, TGames  = empirical.empirical_NGS(datetm, win=wins, SHUF=SHUFFLES, flip_human_AI=flip_human_AI, covariates=cov, expt=expt, visit=visit)
+        weights, iw = sim_prc.recreate_percep_istate(td, ini_percep, fin_percep)
+        
+        ngs, ngsSTSW, all_tds, TGames  = empirical.empirical_NGS(datetm, win=wins, SHUF=SHUFFLES, flip_human_AI=flip_human_AI, covariates=cov, expt=expt, visit=visit)
 
-        # if ngs is not None:
-        #     fNGS = _N.empty((SHUFFLES+1, ngs.shape[1], ngs.shape[2]))
-        #     fNGSSTSW = _N.empty((SHUFFLES+1, ngsSTSW.shape[1], ngsSTSW.shape[2]))            
-        #     t_ms = _N.mean(_N.diff(all_tds[0, :, 3]))
-        #     for sh in range(SHUFFLES+1):
-        #         for i in range(9):
-        #             if gk_w > 0:
-        #                 fNGS[sh, i] = _N.convolve(ngs[sh, i], gk, mode="same")
-        #             else:
-        #                 fNGS[sh, i] = ngs[sh, i]
-        #     for sh in range(SHUFFLES+1):
-        #         for i in range(6):
-        #             if gk_w > 0:
-        #                 fNGSSTSW[sh, i] = _N.convolve(ngsSTSW[sh, i], gk, mode="same")
-        #             else:
-        #                 fNGSSTSW[sh, i] = ngsSTSW[sh, i]
+        if ngs is not None:
+            fNGS = _N.empty((SHUFFLES+1, ngs.shape[1], ngs.shape[2]))
+            fNGSSTSW = _N.empty((SHUFFLES+1, ngsSTSW.shape[1], ngsSTSW.shape[2]))            
+            t_ms = _N.mean(_N.diff(all_tds[0, :, 3]))
+            for sh in range(SHUFFLES+1):
+                for i in range(9):
+                    if gk_w > 0:
+                        fNGS[sh, i] = _N.convolve(ngs[sh, i], gk, mode="same")
+                    else:
+                        fNGS[sh, i] = ngs[sh, i]
+            for sh in range(SHUFFLES+1):
+                for i in range(6):
+                    if gk_w > 0:
+                        fNGSSTSW[sh, i] = _N.convolve(ngsSTSW[sh, i], gk, mode="same")
+                    else:
+                        fNGSSTSW[sh, i] = ngsSTSW[sh, i]
 
-        #     pklme = {}
-        #     pklme["cond_probs"] = fNGS
-        #     pklme["cond_probsSTSW"] = fNGSSTSW
-        #     pklme["all_tds"] = all_tds
+            pklme = {}
+            pklme["cond_probs"] = fNGS
+            pklme["cond_probsSTSW"] = fNGSSTSW
+            pklme["all_tds"] = all_tds
                 
-        #     pklme["start_time"] = start_time
-        #     pklme["end_time"] = end_time    
+            pklme["start_time"] = start_time
+            pklme["end_time"] = end_time
+            pklme["AI_weights"] = weights[iw]
 
-        #     dmp = open("%(dir)s/%(cov)s_%(visit)d.dmp" % {"cov" : scov, "dir" : out_dir, "visit" : visit}, "wb")
-        #     pickle.dump(pklme, dmp, -1)
-        #     dmp.close()
+            dmp = open("%(dir)s/%(cov)s_%(visit)d.dmp" % {"cov" : scov, "dir" : out_dir, "visit" : visit}, "wb")
+            pickle.dump(pklme, dmp, -1)
+            dmp.close()
 
 
 

@@ -14,7 +14,7 @@ st_los = 7
 up_los = 8
 
 def empirical_NGS(dat, SHUF=0, win=20, flip_human_AI=False, covariates=_AIconst._WTL, expt="EEG1", visit=None):
-    _td, start_tm, end_tm, UA, cnstr = _rt.return_hnd_dat(dat, has_useragent=True, has_start_and_end_times=True, has_constructor=True, flip_human_AI=flip_human_AI, expt=expt, visit=visit)
+    _td, start_tm, end_tm, UA, cnstr, inp_meth, ini_percep, fin_percep = _rt.return_hnd_dat(dat, has_useragent=True, has_start_and_end_times=True, has_constructor=True, flip_human_AI=flip_human_AI, expt=expt, visit=visit)
     if _td is None:
         return None, None
     Tgame= _td.shape[0]

@@ -71,7 +71,8 @@ for date in dates:
 if expt == "TMB1":
     fns, dats, cnstrctrs = _rt.filterRPSdats(expt, dates, visits=[1], domainQ=_rt._TRUE_AND_FALSE_, demographic=_rt._TRUE_AND_FALSE_, mentalState=_rt._TRUE_AND_FALSE_, minIGI=20, maxIGI=90000, MinWinLossRat=0, has_useragent=True, has_start_and_end_times=True, has_constructor=True, blocks=4)
 else:
-    fns, dats, cnstrctrs = _rt.filterRPSdats(expt, dates, visits=[1, ], domainQ=_rt._TRUE_AND_FALSE_, demographic=_rt._TRUE_AND_FALSE_, mentalState=_rt._TRUE_AND_FALSE_, minIGI=20, maxIGI=90000, MinWinLossRat=0, has_useragent=True, has_start_and_end_times=True, has_constructor=True, blocks=1)
+    fns, dats, cnstrs = _rt.filterRPSdats(expt, dates, visits=[1], domainQ=(_rt._TRUE_AND_FALSE_), demographic=_rt._TRUE_AND_FALSE_, mentalState=_rt._TRUE_AND_FALSE_, min_meanIGI=500, max_meanIGI=20000, minIGI=100, maxIGI=30000, MinWinLossRat=0.5, has_useragent=True, has_start_and_end_times=True, has_constructor=True, blocks=1)    
+    #fns, dats, cnstrctrs = _rt.filterRPSdats(expt, dates, visits=[1, ], domainQ=_rt._TRUE_AND_FALSE_, demographic=_rt._TRUE_AND_FALSE_, mentalState=_rt._TRUE_AND_FALSE_, minIGI=20, maxIGI=90000, MinWinLossRat=0, has_useragent=True, has_start_and_end_times=True, has_constructor=True, blocks=1)
 
 fp = open("%sfns.txt" % expt, "w")
 
