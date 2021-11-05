@@ -176,7 +176,8 @@ def rm_outliersCC(x, y):
     return rmvd, x[interiorPts], y[interiorPts]#, _ss.pearsonr(x[interiorPts], y[interiorPts])
  
 
-lm = depickle("AQ28_vs_RPS.dmp")
+
+lm = depickle("predictAQ28dat/AQ28_vs_RPS.dmp")
 
 
 features_cab = lm["features_cab"]
@@ -206,258 +207,28 @@ imax_imin_pfrm36  = lm["imax_imin_pfrm36"]
 imax_imin_pfrm69  = lm["imax_imin_pfrm69"]
 imax_imin_pfrm912 = lm["imax_imin_pfrm912"]
 data = lm["data"]
-
-###############  sort by entropyU.  Show
-
-#AI_features   = _N.empty((len(partIDs), 301, 3, 3))
-#AI_features   = _N.empty((len(partIDs), 301, 3), dtype=_N.int)
-# AI_features   = _N.empty((len(partIDs), 301, 2), dtype=_N.int)
-
-# AI_ent = _N.empty(len(partIDs))
-# for i in range(len(partIDs)):
-#     prm_sts = {}
-#     weights = lm["all_AI_weights"][i]
-#     #ss = _N.sum(_N.diff(lm["all_AI_weights"][i], axis=3)[:, :, :, 0], axis=1)
-#     #ss = _N.diff(_N.sum(lm["all_AI_weights"][i], axis=1)[:, :, 0], axis=1)
-
-#     d_weights = _N.diff(weights, axis=3)
-
-#     _ss.pearsonr(
-#     AI_features[i] = _N.array(_N.rint(ss[0:] - ss[0]), dtype=_N.int)
-    
-#     for n in range(301):
-#         try:
-#             prm_sts[str(AI_features[i][n].flatten())] += 1
-#         except KeyError:
-#             prm_sts[str(AI_features[i][n].flatten())] = 1
-
-#     keys = prm_sts.keys()
-
-#     trms = 0.
-#     for key in keys:
-#         p = prm_sts[key] / len(keys)
-#         trms += p * _N.log2(p)
-#     if trms < 0:
-#         print(keys)
-#     AI_ent[i] = trms
-
-###########################  For R21 FIGURE
-# sinds = entropyU.argsort()
-# min_prob_mvs = all_prob_mvsA[sinds[0]]
-# max_prob_mvs = all_prob_mvsA[sinds[-1]]
-# fig = _plt.figure(figsize=(5.2, 3))
-# fig.add_subplot(2, 1, 1)
-# _plt.plot(min_prob_mvs[2, 2], label=r"$p_k($UP$|$L$)$")
-# _plt.plot(min_prob_mvs[1, 2], label=r"$p_k($UP$|$T$)$")
-# _plt.plot(min_prob_mvs[0, 2], label=r"$p_k($UP$|$W$)$")
-# _plt.legend(fontsize=8)
-# _plt.xticks(_N.arange(0, 300, 70), fontsize=13)
-# _plt.xlim(0, 410)
-# fig.add_subplot(2, 1, 2)
-# _plt.plot(max_prob_mvs[2, 2], label=r"$p_k($UP$|$L$)$")
-# _plt.plot(max_prob_mvs[1, 2], label=r"$p_k($UP$|$T$)$")
-# _plt.plot(max_prob_mvs[0, 2], label=r"$p_k($UP$|$W$)$")
-# _plt.legend(fontsize=8)
-# _plt.xticks(_N.arange(0, 300, 70), fontsize=13)
-# _plt.xlabel(r"Game # $k$", fontsize=15)
-# _plt.xlim(0, 410)
-# fig.subplots_adjust(bottom=0.18, hspace=0.4)
-# _plt.savefig("EntropyU_prob_mvs_%(lb)d" % {"lb" : label}, transparent=True)
-
-###############  sort by entropyU.  Show
-#signal_5_95
-# sinds = pfrm_change69.argsort()
-# lo69 = _N.mean(signal_5_95[sinds[0:10], 0], axis=0)
-# hi69 = _N.mean(signal_5_95[sinds[-11:-1], 0], axis=0)
-# fig = _plt.figure(figsize=(5.5, 4))
-# fig.add_subplot(1, 1, 1)
-# _plt.plot(lo69, color="blue", lw=2)
-# _plt.plot(hi69, color="red", lw=5)
-# _plt.axhline(y=0, ls=":", color="grey")
-# _plt.axvline(x=(t1-t0-1)/2, ls=":", color="grey")
-# _plt.xticks(_N.arange(t1-t0), _N.arange(t0 - win//2, t1 - win//2), fontsize=19)
-# _plt.yticks(fontsize=19)
-# _plt.ylabel("p(W) - p(L)", fontsize=20)
-# _plt.xlabel("lag around rule-chng (#games)", fontsize=20)
-# _plt.xlim(0, t1-t0-1)
-# _plt.ylim(-0.19, 0.19)
-# fig.subplots_adjust(bottom=0.21, hspace=0.4, left=0.23, right=0.98)
-# _plt.savefig("jump69_%(lb)d" % {"lb" : label}, transparent=True)
-
-# ###############  sort by moresim.  Show 
-# sinds = moresim.argsort()
-# min_prob_mvs = all_prob_mvsA[sinds[0]]
-# max_prob_mvs = all_prob_mvsA[sinds[-1]]
-
-
-# #  The Tie more similar to Win
-# lblsz=14
-# fig = _plt.figure(figsize=(6, 2.2))
-# #############################################
-# fig.add_subplot(3, 2, 1)
-# _plt.title(r"$|p(\cdot | $TIE$) - p(\cdot | $WIN$)|$", fontsize=(lblsz+3))
-# _plt.plot(_N.abs(min_prob_mvs[1, 0] - min_prob_mvs[0, 0]), color="black")   #  DN|WIN
-# _plt.ylim(0, 1)
-# _plt.xticks([])
-# _plt.ylabel("DN", fontsize=lblsz)
-# #############################################
-# fig.add_subplot(3, 2, 3)
-# _plt.plot(_N.abs(min_prob_mvs[1, 1] - min_prob_mvs[0, 1]), color="black")   #  ST|WIN
-# _plt.ylim(0, 1)
-# _plt.xticks([])
-# _plt.ylabel("ST", fontsize=lblsz)
-# #############################################
-# fig.add_subplot(3, 2, 5)
-# _plt.plot(_N.abs(min_prob_mvs[1, 2] - min_prob_mvs[0, 2]), color="black")   #  UP|WIN
-# _plt.ylim(0, 1)
-# _plt.xticks(fontsize=(lblsz-2))
-# _plt.ylabel("UP", fontsize=lblsz)
-# _plt.xlabel("Game #", fontsize=lblsz)
-# #############################################
-# fig.add_subplot(3, 2, 2)
-# _plt.title(r"$|p(\cdot | $TIE$) - p(\cdot | $LOS$)|$", fontsize=(lblsz+3))
-# _plt.plot(_N.abs(min_prob_mvs[1, 0] - min_prob_mvs[2, 0]), color="black")   #  DN|TIE
-# _plt.ylim(0, 1)
-# _plt.xticks([])
-# _plt.yticks([])
-# #############################################
-# fig.add_subplot(3, 2, 4)
-# _plt.plot(_N.abs(min_prob_mvs[1, 1] - min_prob_mvs[2, 1]), color="black")   #  ST|TIE
-# _plt.ylim(0, 1)
-# _plt.xticks([])
-# _plt.yticks([])
-# #############################################
-# fig.add_subplot(3, 2, 6)
-# _plt.plot(_N.abs(min_prob_mvs[1, 2] - min_prob_mvs[2, 2]), color="black")   #  UP|TIE
-# _plt.ylim(0, 1)
-# _plt.yticks([])
-# _plt.xticks(fontsize=(lblsz-2))
-# _plt.xlabel("Game #", fontsize=lblsz)
-# fig.subplots_adjust(wspace=0.1, bottom=0.22, hspace=0.3, top=0.86)
-# _plt.savefig("diff_win_similar_tie_%(lb)d.pdf" % {"lb" : label}, transparent=True)
-
-# #  The Tie more similar to Los
-# fig = _plt.figure(figsize=(5, 4))
-# fig.add_subplot(3, 2, 1)
-# _plt.title(r"|$p(\cdot | TIE) - p(\cdot | WIN)$|")
-# _plt.plot(max_prob_mvs[1, 0] - max_prob_mvs[0, 0], color="black")   #  DN|WIN
-# _plt.ylim(-1, 1)
-# _plt.xticks([])
-# fig.add_subplot(3, 2, 3)
-# _plt.plot(max_prob_mvs[1, 1] - max_prob_mvs[0, 1], color="black")   #  ST|WIN
-# _plt.ylim(-1, 1)
-# _plt.xticks([])
-# fig.add_subplot(3, 2, 5)
-# _plt.plot(max_prob_mvs[1, 2] - max_prob_mvs[0, 2], color="black")   #  UP|WIN
-# _plt.ylim(-1, 1)
-# fig.add_subplot(3, 2, 2)
-# _plt.title(r"|$p(\cdot | TIE) - p(\cdot | LOS)$|")
-# _plt.plot(max_prob_mvs[1, 0] - max_prob_mvs[2, 0], color="black")   #  DN|TIE
-# _plt.ylim(-1, 1)
-# _plt.xticks([])
-# fig.add_subplot(3, 2, 4)
-# _plt.plot(max_prob_mvs[1, 1] - max_prob_mvs[2, 1], color="black")   #  ST|TIE
-# _plt.ylim(-1, 1)
-# _plt.xticks([])
-# fig.add_subplot(3, 2, 6)
-# _plt.plot(max_prob_mvs[1, 2] - max_prob_mvs[2, 2], color="black")   #  UP|TIE
-# _plt.ylim(-1, 1)
-# _plt.savefig("diff_win_similar_los_%(lb)d" % {"lb" : label}, transparent=True)
-
-# ###############  show me inter-event intervals
-
-# for by in ["isis_cv", "isis_corr"]:
-#     by_m = isis_cv.argsort() if by == "isis_cv" else isis_corr.argsort()
-#     fig = _plt.figure(figsize=(5.2, 3))    
-#     for ii in range(2):
-#         intvs = all_maxs[by_m[0]] if ii == 0 else all_maxs[by_m[-2]]
-#         fig.add_subplot(2, 1, ii+1)
-#         t = 0
-#         for i in range(intvs.shape[0]):
-#             _plt.plot([t, t], [0, 1], color="black")
-#             t += intvs[i]
-#         if ii == 1:
-#             _plt.xlabel(r"Game # $k$", fontsize=15)
-#         _plt.xticks(_N.arange(0, 300, 70), fontsize=13)
-#         _plt.xlim(0, 300)
-#         _plt.yticks([])        
-#     #_plt.suptitle("Rule change timing (at game)")
-
-
-#     fig.subplots_adjust(bottom=0.25, hspace=0.9)
-    
-#     _plt.savefig("%(by)s_big_small_%(lb)d" % {"by" : by, "lb" : label}, transparent=True)
-
-old_pc = []
-new_pc = []
-old_pv = []
-new_pv = []
-
 nDAT = len(partIDs)
-nDAThlf = nDAT//2
-allInds = _N.arange(nDAT)
-
 show_mn = True
 mn_mode = 2
+allInds = _N.arange(nDAT)
 
 winsz=15
 
-fig = _plt.figure(figsize=(10, 10))
-if1 = -1
-for sfeat1 in ["entropyS", "entropyD", "entropyU"]:
-    feat1 = eval(sfeat1)
-    if1 += 1
-    if2 = -1
-    for sfeat2 in ["entropyW2", "entropyT2", "entropyL2"]:
-        feat2 = eval(sfeat2)
-        if2 += 1
-        fig.add_subplot(3, 3, if1*3 + if2 + 1)
-        pc, pv = _ss.pearsonr(feat1, feat2)
-        _plt.title("%(pc).2f  %(pv).1e" % {"pc" : pc, "pv" : pv}) 
-        _plt.scatter(feat1, feat2, color="black", s=5)
-        if if2 == 0:
-            _plt.ylabel(sfeat1, fontsize=18)
-        if if1 == 2:
-            _plt.xlabel(sfeat2, fontsize=18)
-        _plt.xticks(fontsize=13)
-        _plt.yticks(fontsize=13)        
-fig.subplots_adjust(wspace=0.25, hspace=0.25)
-_plt.savefig("corr_btwn_ent_comps_real2")
 
-fig = _plt.figure(figsize=(10, 10))
-if1 = -1
-for sfeat1 in ["entropyS", "entropyD", "entropyU"]:
-    feat1 = eval(sfeat1)
-    if1 += 1
-    if2 = -1
-    for sfeat2 in ["entropyW", "entropyT", "entropyL"]:
-        feat2 = eval(sfeat2)
-        if2 += 1
-        fig.add_subplot(3, 3, if1*3 + if2 + 1)
-        pc, pv = _ss.pearsonr(feat1, feat2)
-        _plt.title("%(pc).2f  %(pv).1e" % {"pc" : pc, "pv" : pv}) 
-        _plt.scatter(feat1, feat2, color="black", s=5)
-        if if2 == 0:
-            _plt.ylabel(sfeat1, fontsize=18)
-        if if1 == 2:
-            _plt.xlabel(sfeat2, fontsize=18)
-        _plt.xticks(fontsize=13)
-        _plt.yticks(fontsize=13)        
-fig.subplots_adjust(wspace=0.25, hspace=0.25)
-_plt.savefig("corr_btwn_ent_comps_real")
 
 entropyUD = _N.exp((entropyD + entropyU) / (_N.mean(entropyD + entropyU)))
 #entropyUD2 = _N.exp(entropyUD2 / _N.mean(entropyUD2))
 #entropyS2 = _N.exp(entropyS2 / _N.mean(entropyS2))
 
+mmm  = 1.
 entropyUDS = _N.exp((entropyD + entropyU + entropyS) / (_N.mean(entropyD + entropyU + entropyS)))
 entropyD = _N.exp(entropyD / _N.mean(entropyD))
 entropyS = _N.exp(entropyS / _N.mean(entropyS))
 entropyU = _N.exp(entropyU / _N.mean(entropyU))
 entropyWL = _N.exp((entropyW+entropyL) / _N.mean(entropyW+entropyL))
-entropyW = _N.exp(entropyW / _N.mean(entropyW*0.3))
-entropyT = _N.exp(entropyT / _N.mean(entropyT*0.3))
-entropyL = _N.exp(entropyL / _N.mean(entropyL*0.3))
+entropyW = _N.exp(entropyW / _N.mean(entropyW*mmm))
+entropyT = _N.exp(entropyT / _N.mean(entropyT*mmm))
+entropyL = _N.exp(entropyL / _N.mean(entropyL*mmm))
 entropyT2 = _N.exp(entropyT2 / _N.mean(entropyT2*0.2)) / 10
 entropyW2 = _N.exp(entropyW2 / _N.mean(entropyW2*0.3)) / 10
 entropyL2 = _N.exp(entropyL2 / _N.mean(entropyL2*0.3)) / 10
@@ -467,8 +238,8 @@ ths = _N.where((AQ28scrs > 35) & (rout > 4))[0]
 
 if look_at_AQ:
     pcpvs = {}
-    hlf1    = _N.random.choice(allInds, nDAThlf, replace=False)
-    hlf2    = _N.setdiff1d(allInds, hlf1)
+    #hlf1    = _N.random.choice(allInds, nDAThlf, replace=False)
+    #hlf2    = _N.setdiff1d(allInds, hlf1)
     for cmp_against in cmp_againsts:
         pcs = _N.empty(6)
         pvs = _N.empty(6)
@@ -726,60 +497,60 @@ _plt.savefig("TMB2_AQ_hist", transparent=True)
 ###  Including UP and DN separately in entropy might introduce variability
 ###  that isn't reflective of cognitive thought, but noise
 
-fig = _plt.figure(figsize=(13, 3))
-if1 = -1
-for feat1 in [entropyS, entropyD, entropyU, entropyW2, entropyT2, entropyL2]:
-    if1 += 1
-    fig.add_subplot(1, 6, if1+1)
-    pc, pv = _ss.pearsonr(feat1, isis_cv)
-    _plt.title("%(pc).2f  %(pv).3f" % {"pc" : pc, "pv" : pv}) 
-    _plt.scatter(feat1, isis_cv, color="black", s=3)
+# fig = _plt.figure(figsize=(13, 3))
+# if1 = -1
+# for feat1 in [entropyS, entropyD, entropyU, entropyW2, entropyT2, entropyL2]:
+#     if1 += 1
+#     fig.add_subplot(1, 6, if1+1)
+#     pc, pv = _ss.pearsonr(feat1, isis_cv)
+#     _plt.title("%(pc).2f  %(pv).3f" % {"pc" : pc, "pv" : pv}) 
+#     _plt.scatter(feat1, isis_cv, color="black", s=3)
 
 
-fig = _plt.figure(figsize=(13, 3))    
-if1 = -1
-for feat1 in [entropyS, entropyD, entropyU, entropyW2, entropyT2, entropyL2]:
-    if1 += 1
-    fig.add_subplot(1, 6, if1+1)
-    pc, pv = _ss.pearsonr(feat1, isis_corr)
-    _plt.title("%(pc).2f  %(pv).3f" % {"pc" : pc, "pv" : pv}) 
-    _plt.scatter(feat1, isis_corr, color="black", s=3)
+# fig = _plt.figure(figsize=(13, 3))    
+# if1 = -1
+# for feat1 in [entropyS, entropyD, entropyU, entropyW2, entropyT2, entropyL2]:
+#     if1 += 1
+#     fig.add_subplot(1, 6, if1+1)
+#     pc, pv = _ss.pearsonr(feat1, isis_corr)
+#     _plt.title("%(pc).2f  %(pv).3f" % {"pc" : pc, "pv" : pv}) 
+#     _plt.scatter(feat1, isis_corr, color="black", s=3)
 
-fig = _plt.figure(figsize=(10, 10))
-i   = -1
-for i in range(3):
-    for j in range(3):
-        if2 += 1
-        fig.add_subplot(3, 3, 3*i + j + 1)
-        pc, pv = _ss.pearsonr(AQ28scrs[ths], marginalCRs[ths, i, j])
-        _plt.title("%(pc).2f  %(pv).3f" % {"pc" : pc, "pv" : pv}) 
-        _plt.scatter(AQ28scrs[ths], marginalCRs[ths, i, j], color="black", s=3)
+# fig = _plt.figure(figsize=(10, 10))
+# i   = -1
+# for i in range(3):
+#     for j in range(3):
+#         if2 += 1
+#         fig.add_subplot(3, 3, 3*i + j + 1)
+#         pc, pv = _ss.pearsonr(AQ28scrs[ths], marginalCRs[ths, i, j])
+#         _plt.title("%(pc).2f  %(pv).3f" % {"pc" : pc, "pv" : pv}) 
+#         _plt.scatter(AQ28scrs[ths], marginalCRs[ths, i, j], color="black", s=3)
 
-fig = _plt.figure(figsize=(10, 10))
-aq28sig = fact_pat
-for i in range(3):
-    for j in range(3):
-        if2 += 1
-        fig.add_subplot(3, 3, 3*i + j + 1)
-        pc, pv = _ss.pearsonr(aq28sig[ths], marginalCRs[ths, i, j])
-        _plt.title("%(pc).2f  %(pv).3f" % {"pc" : pc, "pv" : pv}) 
-        _plt.scatter(aq28sig[ths], marginalCRs[ths, i, j], color="black", s=3)
+# fig = _plt.figure(figsize=(10, 10))
+# aq28sig = fact_pat
+# for i in range(3):
+#     for j in range(3):
+#         if2 += 1
+#         fig.add_subplot(3, 3, 3*i + j + 1)
+#         pc, pv = _ss.pearsonr(aq28sig[ths], marginalCRs[ths, i, j])
+#         _plt.title("%(pc).2f  %(pv).3f" % {"pc" : pc, "pv" : pv}) 
+#         _plt.scatter(aq28sig[ths], marginalCRs[ths, i, j], color="black", s=3)
 
 #_ss.pearsonr(isis_corr, pfrm_change69)
 #_plt.scatter(_N.sum(sum_sd[:, 1], axis=1), isis_corr)
 #_plt.scatter(_N.sum(sum_sd[:, :, 2], axis=1), isis_corr)
 
 
-for i1 in range(3):
-    for i2 in range(i1+1, 3):
-        fig = _plt.figure(figsize=(10, 10))
-        _plt.suptitle("%(i1)d %(i2)d" % {"i1" : i1, "i2" : i2})
-        for j1 in range(3):
-            for j2 in range(3):
-                fig.add_subplot(3, 3, 3*j1 + j2 + 1)
-                pc, pv = _ss.pearsonr(marginalCRs[:, i1, j1], marginalCRs[:, i2, j2])
-                _plt.title("%(pc).2f  %(pv).3f" % {"pc" : pc, "pv" : pv}) 
-                _plt.scatter(marginalCRs[:, i1, j1], marginalCRs[:, i2, j2], color="black", s=3)
+# for i1 in range(3):
+#     for i2 in range(i1+1, 3):
+#         fig = _plt.figure(figsize=(10, 10))
+#         _plt.suptitle("%(i1)d %(i2)d" % {"i1" : i1, "i2" : i2})
+#         for j1 in range(3):
+#             for j2 in range(3):
+#                 fig.add_subplot(3, 3, 3*j1 + j2 + 1)
+#                 pc, pv = _ss.pearsonr(marginalCRs[:, i1, j1], marginalCRs[:, i2, j2])
+#                 _plt.title("%(pc).2f  %(pv).3f" % {"pc" : pc, "pv" : pv}) 
+#                 _plt.scatter(marginalCRs[:, i1, j1], marginalCRs[:, i2, j2], color="black", s=3)
 
 """                
 a_all_prob_pcs = _N.array(all_prob_pcs)
@@ -875,7 +646,7 @@ for scmb in cmbs:
     ss1      = "***" if pv1 < 0.05 else ""    
     pc2, pv2 = _ss.pearsonr(imag[ths], feat[ths])
     ss2      = "***" if pv2 < 0.05 else ""    
-    pc3, pv4 = _ss.pearsonr(rout[ths], feat[ths])
+    pc3, pv3 = _ss.pearsonr(rout[ths], feat[ths])
     ss3      = "***" if pv3 < 0.05 else ""        
     pc4, pv4 = _ss.pearsonr(switch[ths], feat[ths])
     ss4      = "***" if pv4 < 0.05 else ""        
@@ -892,3 +663,6 @@ for scmb in cmbs:
     print("6 %(1) .3f  %(2).3f  %(3)s" % {"1" : pc6, "2" : pv6, "3" : ss6})
     
 
+
+
+    

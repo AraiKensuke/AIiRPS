@@ -748,7 +748,7 @@ dmp_dat["data"] = data
 dmp_dat["end_strts"] = end_strts
 
 
-dmpout = open("AQ28_vs_RPS.dmp", "wb")
+dmpout = open("predictAQ28dat/AQ28_vs_RPS.dmp", "wb")
 pickle.dump(dmp_dat, dmpout, -1)
 dmpout.close()
     
