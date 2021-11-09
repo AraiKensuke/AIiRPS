@@ -110,7 +110,7 @@ netwin_mim  = _N.empty(nDataSets, dtype=_N.int)
 for partID in partIDs:
     pid += 1
     for blk in range(4):
-        _hnd_dat, start_time, end_time, UA, cnstr            = _rt.return_hnd_dat(partID, has_useragent=True, has_start_and_end_times=True, has_constructor=True, visit=1, expt="TMB1", block=(blk+1))
+        _hnd_dat, start_time, end_time, UA, cnstr, inpmeth, none1, none2            = _rt.return_hnd_dat(partID, has_useragent=True, has_start_and_end_times=True, has_constructor=True, visit=1, expt="TMB1", block=(blk+1))
         if cnstr == s_unb_rand:
             all_unbr_dat[pid-1] = _hnd_dat
         if cnstr == s_wtl_rand:

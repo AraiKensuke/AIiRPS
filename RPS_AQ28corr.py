@@ -29,6 +29,74 @@ import AIiRPS.models.empirical as _emp
 import GCoh.eeg_util as _eu
 import matplotlib.ticker as ticker
 
+from sklearn.model_selection import RepeatedKFold
+
+def featureLC(x_list, yAll, ths, SHF=500, folds=3):
+    y      = yAll[ths]
+
+    pcpvs  = _N.empty((SHF, folds, 2))
+    pcpvs0 = _N.empty((SHF, folds, 2))
+    sh_ths = _N.arange(y.shape[0])
+
+    L      = len(sh_ths)
+    Lp     = L//folds
+
+    x  = _N.zeros(len(ths))    
+    for iall in range(len(x_list)):
+        x += x_list[iall][0][ths] * x_list[iall][1]
+    pcA, pvA = _ss.pearsonr(x, y)
+    print("**********************************")
+    print("ALL pc  %(pc).3f  pv  %(pv).1e" % {"pc" : pcA, "pv" : pvA})
+    ###########################
+    reliable = []
+    for iRmv in range(len(x_list)):
+        Use   = []
+        NoUse = []
+        x  = _N.zeros(len(ths))
+        #x0 = _N.zeros(len(ths))
+        x0 = x_list[iRmv][0]
+        for iU in range(len(x_list)):
+            if iU != iRmv:
+                x += x_list[iU][0][ths] * x_list[iU][1]
+        pc, pv = _ss.pearsonr(x, y)
+        pc0, pv0 = _ss.pearsonr(x, y)   #  The rest 
+
+        #  first, is pc < pcA?
+        for sh in range(SHF):
+            #  Now ask, does removing one of the features reliably result in
+            #  an increase of CC?  We do this in by repeating CC calculation
+            #  in folds
+            _N.random.shuffle(sh_ths)
+            for pc in range(folds):
+                cc, pv = _ss.pearsonr(x[sh_ths[pc*Lp:(pc+1)*Lp]], y[sh_ths[pc*Lp:(pc+1)*Lp]])
+                cc0, pv0 = _ss.pearsonr(x0[sh_ths[pc*Lp:(pc+1)*Lp]], y[sh_ths[pc*Lp:(pc+1)*Lp]])        
+                pcpvs[sh, pc] = cc, pv
+                pcpvs0[sh, pc] = cc0, pv0
+        diffs = pcpvs[:, :, 0] - pcpvs0[:, :, 0]
+        whereSmallerCC = _N.where(diffs.flatten() < 0)[0]
+        if len(whereSmallerCC) < 0.05*SHF*folds:
+            print("feature %(irmv)d reliably increases CC   %(rat).2f" % {"irmv" : iRmv, "rat" : (len(whereSmallerCC)/(SHF*folds))})
+            reliable.append(iRmv)
+        else:
+            print("feature %(irmv)d NOT reliab increase CC   %(rat).2f" % {"irmv" : iRmv, "rat" : (len(whereSmallerCC)/(SHF*folds))})            
+
+    x  = _N.zeros(len(ths))            
+    for iUse in reliable:
+        x += x_list[iUse][0][ths] * x_list[iUse][1]
+    cc, pv = _ss.pearsonr(x, y)
+    print("Reliable pc  %(pc).3f  pv  %(pv).1e" % {"pc" : cc, "pv" : pv})
+    return x, y
+
+def unskew(dat):
+    sk = _N.empty(15)
+    im = -1
+    ms = _N.linspace(0.01, 1.1, 15)
+    for m in ms:
+        im += 1
+        sk[im] = _ss.skew(_N.exp(dat / (m*_N.mean(dat))))
+    min_im = _N.where(_N.abs(sk) == _N.min(_N.abs(sk)))[0][0]
+    return _N.exp(dat / (ms[min_im]*_N.mean(dat)))
+
 def depickle(s):
      import pickle
      with open(s, "rb") as f:
@@ -174,20 +242,26 @@ def rm_outliersCC(x, y):
     interiorPts = _N.setdiff1d(_N.arange(len(x)), ths_unq)
     #print("%(ths)d" % {"ths" : len(ths)})
     return rmvd, x[interiorPts], y[interiorPts]#, _ss.pearsonr(x[interiorPts], y[interiorPts])
- 
 
+def standardize(y):
+    ys = y - _N.mean(y)
+    ys /= _N.std(ys)
+    return ys
 
 lm = depickle("predictAQ28dat/AQ28_vs_RPS.dmp")
-
 
 features_cab = lm["features_cab"]
 features_stat = lm["features_stat"]
 cmp_againsts = features_cab + features_stat
 
 for ca in cmp_againsts:
-    exec("%(ca)s = lm[\"%(ca)s\"]" % {"ca" : ca})
+    exec("temp = lm[\"%(ca)s\"]" % {"ca" : ca})
+    exec("%(ca)s = lm[\"%(ca)s\"]" % {"ca" : ca})    
+    if ca[0:7] == "entropy":
+        exec("temp = unskew(temp)" % {"ca" : ca})
+    exec("%(ca)s_s = standardize(temp)" % {"ca" : ca})
 
-look_at_AQ    = True
+look_at_AQ    = False
 marginalCRs   = eval("lm[\"marginalCRs\"]")
 AQ28scrs      = eval("lm[\"AQ28scrs\"]")
 soc_skils     = eval("lm[\"soc_skils\"]")
@@ -216,25 +290,14 @@ winsz=15
 
 
 
-entropyUD = _N.exp((entropyD + entropyU) / (_N.mean(entropyD + entropyU)))
+#entropyUD = unskew(entropyUD)#_N.exp((entropyD + entropyU) / (_N.mean(entropyD +# entropyU)))
 #entropyUD2 = _N.exp(entropyUD2 / _N.mean(entropyUD2))
 #entropyS2 = _N.exp(entropyS2 / _N.mean(entropyS2))
 
-mmm  = 1.
-entropyUDS = _N.exp((entropyD + entropyU + entropyS) / (_N.mean(entropyD + entropyU + entropyS)))
-entropyD = _N.exp(entropyD / _N.mean(entropyD))
-entropyS = _N.exp(entropyS / _N.mean(entropyS))
-entropyU = _N.exp(entropyU / _N.mean(entropyU))
-entropyWL = _N.exp((entropyW+entropyL) / _N.mean(entropyW+entropyL))
-entropyW = _N.exp(entropyW / _N.mean(entropyW*mmm))
-entropyT = _N.exp(entropyT / _N.mean(entropyT*mmm))
-entropyL = _N.exp(entropyL / _N.mean(entropyL*mmm))
-entropyT2 = _N.exp(entropyT2 / _N.mean(entropyT2*0.2)) / 10
-entropyW2 = _N.exp(entropyW2 / _N.mean(entropyW2*0.3)) / 10
-entropyL2 = _N.exp(entropyL2 / _N.mean(entropyL2*0.3)) / 10
-
 ths = _N.where((AQ28scrs > 35) & (rout > 4))[0]
+#ths = _N.where((AQ28scrs > 35) & (rout > 4))[0]
 #ths = _N.where((AQ28scrs > 35))[0]
+#ths  = _N.arange(AQ28scrs.shape[0])
 
 if look_at_AQ:
     pcpvs = {}
@@ -247,7 +310,10 @@ if look_at_AQ:
         #if cmp_against == "entropyUD":
         #    cmp_vs = entropyU + entropyD
         if cmp_against == "sum_sd":
-            cmp_vs = _N.log(_N.sum(sum_sd[:, :, 0], axis=1) + _N.sum(sum_sd[:, :, 2], axis=1))
+            #cmp_vs = _N.log(_N.sum(sum_sd[:, :, 0], axis=1) + _N.sum(sum_sd[:, :, 2], axis=1))
+            cmp_vs = sum_sd[:, 0, 0] + sum_sd[:, 2, 2]
+            cmp_vs = sum_sd[:, 2, 0] + sum_sd[:, 0, 2]
+            cmp_vs = sum_sd[:, 1, 0] + sum_sd[:, 2, 1] + sum_sd[:, 0, 2]
             #cmp_vs = _N.log(_N.sum(sum_sd[:, :, 0], axis=1) + _N.sum(sum_sd[:, :, 2], axis=1))
             #cmp_vs = _N.log(sum_sd[:, 2, 0] + sum_sd[:, 2, 2])
             #cmp_vs = _N.log(_N.sum(sum_sd[:, :, 0], axis=1) / _N.sum(sum_sd[:, :, 2], axis=1))   #  INTERESTING
@@ -600,69 +666,73 @@ for i in range(len(partIDs)):
 #  entropyL - entropyS  (SW)
 #  entropyL + entropyW  (fact_pat)
 
-sL = _N.std(entropyL)
-eL = entropyL/sL
-mL = _N.mean(eL)
-entropyLs = eL - mL
-sW = _N.std(entropyW)
-eW = entropyW/sW
-mW = _N.mean(eW)
-entropyWs = eW - mW
-sT = _N.std(entropyT)
-eT = entropyT/sT
-mT = _N.mean(eT)
-entropyTs = eT - mT
-sS = _N.std(entropyS)
-eS = entropyS/sS
-mS = _N.mean(eS)
-entropySs = eS - mS
-sD = _N.std(entropyD)
-eD = entropyD/sD
-mD = _N.mean(eD)
-entropyDs = eD - mD
+# cmbs = ["entropyLs - entropyWs", "entropyLs + entropyWs",
+#         "entropyLs - entropyTs", "entropyLs + entropyTs",
+#         "entropyWs - entropyTs", "entropyWs + entropyTs",
+#         #################
+#         "entropyTs - entropySs", "entropyTs + entropySs", 
+#         "entropyTs - entropyDs", "entropyTs + entropyDs",
+#         "entropyTs - entropyUs", "entropyTs + entropyUs",
+#         #################        
+#         "entropyLs - entropySs", "entropyLs + entropySs", 
+#         "entropyLs - entropyDs", "entropyLs + entropyDs",
+#         "entropyLs - entropyUs", "entropyLs + entropyUs",
+#         #################
+#         "entropyWs - entropySs", "entropyWs + entropySs",
+#         "entropyWs - entropyDs", "entropyWs + entropyDs",
+#         "entropyWs - entropyUs", "entropyWs + entropyUs"]
 
-cmbs = ["entropyL - entropyW", "entropyL + entropyW",
-        "entropyL - entropyT", "entropyL + entropyT",
-        "entropyW - entropyT", "entropyW + entropyT",        
-        "entropyT - entropyS", "entropyT + entropyS", 
-        "entropyT - entropyD", "entropyT + entropyD", 
-        "entropyL - entropyS", "entropyL + entropyS", 
-        "entropyL - entropyD", "entropyL + entropyD", 
-        "entropyW - entropyS", "entropyW + entropyS", 
-        "entropyW - entropyD", "entropyW + entropyD"]
-cmbs = ["entropyLs - entropyWs", "entropyLs + entropyWs",
-        "entropyLs - entropyTs", "entropyLs + entropyTs",
-        "entropyWs - entropyTs", "entropyWs + entropyTs",        
-        "entropyTs - entropySs", "entropyTs + entropySs", 
-        "entropyTs - entropyDs", "entropyTs + entropyDs", 
-        "entropyLs - entropySs", "entropyLs + entropySs", 
-        "entropyLs - entropyDs", "entropyLs + entropyDs", 
-        "entropyWs - entropySs", "entropyWs + entropySs", 
-        "entropyWs - entropyDs", "entropyWs + entropyDs"]
-
-for scmb in cmbs:
-    exec("feat = %s" % scmb)
-    pc1, pv1 = _ss.pearsonr(soc_skils[ths], feat[ths])
-    ss1      = "***" if pv1 < 0.05 else ""    
-    pc2, pv2 = _ss.pearsonr(imag[ths], feat[ths])
-    ss2      = "***" if pv2 < 0.05 else ""    
-    pc3, pv3 = _ss.pearsonr(rout[ths], feat[ths])
-    ss3      = "***" if pv3 < 0.05 else ""        
-    pc4, pv4 = _ss.pearsonr(switch[ths], feat[ths])
-    ss4      = "***" if pv4 < 0.05 else ""        
-    pc5, pv5 = _ss.pearsonr(fact_pat[ths], feat[ths])
-    ss5      = "***" if pv5 < 0.05 else ""
-    pc6, pv6 = _ss.pearsonr(AQ28scrs[ths], feat[ths])
-    ss6      = "***" if pv6 < 0.05 else ""
-    print(scmb)
-    print("1 %(1) .3f  %(2).3f  %(3)s" % {"1" : pc1, "2" : pv1, "3" : ss1})
-    print("2 %(1) .3f  %(2).3f  %(3)s" % {"1" : pc2, "2" : pv2, "3" : ss2})
-    print("3 %(1) .3f  %(2).3f  %(3)s" % {"1" : pc3, "2" : pv3, "3" : ss3})
-    print("4 %(1) .3f  %(2).3f  %(3)s" % {"1" : pc4, "2" : pv4, "3" : ss4})
-    print("5 %(1) .3f  %(2).3f  %(3)s" % {"1" : pc5, "2" : pv5, "3" : ss5})
-    print("6 %(1) .3f  %(2).3f  %(3)s" % {"1" : pc6, "2" : pv6, "3" : ss6})
+# for saqf in ["soc_skils", "imag", "rout", "switch", "fact_pat", "AQ28scrs"]:
+#     print("%s ------------------------ " % saqf)
+#     for scmb in cmbs:
+#         exec("aqf = %s" % saqf)
+#         exec("feat = %s" % scmb)
+#         pc, pv = _ss.pearsonr(aqf[ths], feat[ths])
+#         ss      = "***" if pv < 0.05 else ""    
+#         print("%(scmb)s   %(1) .3f  %(2).3f  %(3)s" % {"1" : pc, "2" : pv, "3" : ss, "scmb" : scmb})
     
+################################  LINEAR COMBINATIONS
+xIMAG      = [[entropyU_s, -1],
+              [pc_M2_s, 0.8],
+              [pc_M3_s, 0.6],
+              [sd_BW_s, -0.8],
+              [pfrm_change69_s, 0.7],
+              [u_or_d_res_s, 0.2],
+              [stay_tie, 0.04],
+              [win_aft_tie, 0.6],
+              [sd_M_s, 0.1],
+              [los_aft_tie_s, -0.7]]
+xSS        = [[moresim_s, 1],
+              [win_aft_tie_s, 1],
+              [los_aft_tie_s, 0.7],                            
+              [sd_MW_s, -0.5],                            
+              [pfrm_change69_s, 1.3],
+              [stay_tie_s, 0.9],              
+              [entropyT2_s, 0.8],
+              [u_or_d_res_s, -0.5]]
+xSW        = [[tie_aft_tie_s, -1],
+              [win_aft_tie_s, 1.4],
+              [pfrm_change69_s, 1.6],
+              [entropyW2_s, 0.8],
+              [u_or_d_tie_s, -0.3]]
+xFACT      = [[sd_BW_s, -1],
+              [entropyL_s, 1.2],
+              [entropyW_s, 0.7]]
+xAQ28      = [[win_aft_tie_s, 1],
+              [stay_tie_s, 0.7],
+              [pfrm_change69_s, 0.7],
+              [pc_M2_s, 0.3],
+              [sd_BW_s, -0.6],
+              [entropyU_s, -0.1]]
 
-
-
-    
+fig = _plt.figure(figsize=(8, 6))
+ifig = 0
+for xy in [[xIMAG, imag, "imag"], [xSS, soc_skils, "soc_skils"], [xSW, switch, "switch"], [xFACT, fact_pat, "fact_pat"], [xAQ28, AQ28scrs, "AQ28"]]:
+    ifig += 1
+    xReliable, yReliable = featureLC(xy[0], xy[1], ths, folds=3)
+    fig.add_subplot(3, 2, ifig)
+    pc, pv = _ss.pearsonr(xReliable, yReliable)
+    _plt.title("%(fact)s   r=%(pc).2f  p<%(pv).1e" % {"fact" : xy[2], "pc" : pc, "pv" : pv})
+    _plt.scatter(xReliable, yReliable, color="black", s=3)
+fig.subplots_adjust(hspace=0.4)
+_plt.savefig("all_LC_corrs")

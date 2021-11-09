@@ -58,19 +58,19 @@ def rm_outliersCC_neighbors(x, y):
     y_std = _N.std(y)
     rmv   = []
     i = 0
-    while x[ix[i+1]] - x[ix[i]] > 4*dsx:
+    while x[ix[i+1]] - x[ix[i]] > 3*dsx:
         rmv.append(ix[i])
         i+= 1
     i = 0
-    while x[ix[L-1-i]] - x[ix[L-1-i-1]] > 4*dsx:
+    while x[ix[L-1-i]] - x[ix[L-1-i-1]] > 3*dsx:
         rmv.append(ix[L-1-i])
         i+= 1
     i = 0
-    while y[iy[i+1]] - y[iy[i]] > 4*dsy:
+    while y[iy[i+1]] - y[iy[i]] > 3*dsy:
         rmv.append(iy[i])
         i+= 1
     i = 0
-    while y[iy[L-1-i]] - y[iy[L-1-i-1]] > 4*dsy:
+    while y[iy[L-1-i]] - y[iy[L-1-i-1]] > 3*dsy:
         rmv.append(iy[L-1-i])
         i+= 1
         
@@ -105,8 +105,9 @@ def depickle(s):
      return lm
 
 def cleanISI(isi, minISI=2):
+    #print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
     ths = _N.where(isi[1:-1] <= minISI)[0] + 1
-    
+    #print(len(ths))
     if len(ths) > 0:
         rebuild = isi.tolist()
         for ih in ths:
@@ -170,7 +171,6 @@ def entropy2(sig, N):
     return entropy
 
 
-
 ##  Then I expect wins following UPs and DOWNs to also be correlated to AQ28
 look_at_AQ = True
 data   = "TMB2"
@@ -217,10 +217,11 @@ TO -= strtTr
 
 #fig= _plt.figure(figsize=(14, 14))
 
-SHUFFLES = 50
+SHUFFLES = 1
 
 t0 = -5
 t1 = 10
+trigger_temp = _N.empty(t1-t0)
 cut = 1
 all_avgs = _N.empty((len(partIDs), SHUFFLES+1, t1-t0))
 netwins  = _N.empty(len(partIDs), dtype=_N.int)
@@ -238,6 +239,8 @@ pid = 0
 
 ts  = _N.arange(t0-2, t1-2)
 signal_5_95 = _N.empty((len(partIDs), 4, t1-t0))
+
+hnd_dat_all = _N.zeros((len(partIDs), TO, 4), dtype=_N.int)
 
 pc_sum = _N.empty(len(partIDs))
 pc_sum01 = _N.empty(len(partIDs))
@@ -257,6 +260,8 @@ corr_UD    = _N.empty((len(partIDs), 3))
 
 score  = _N.empty(len(partIDs))
 moresim  = _N.empty(len(partIDs))
+moresimST  = _N.empty(len(partIDs))
+moresimSW  = _N.empty(len(partIDs))
 moresiment  = _N.empty(len(partIDs))
 sum_sd = _N.empty((len(partIDs), 3, 3))
 sum_sd2 = _N.empty((len(partIDs), 3, 3))
@@ -277,6 +282,27 @@ entropyL = _N.empty(len(partIDs))
 entropyW2 = _N.empty(len(partIDs))   #  
 entropyT2 = _N.empty(len(partIDs))
 entropyL2 = _N.empty(len(partIDs))
+entropyM  = _N.empty(len(partIDs))
+entropyB  = _N.empty(len(partIDs))
+sd_M      = _N.empty(len(partIDs))
+sd_MW      = _N.empty(len(partIDs))
+sd_MT      = _N.empty(len(partIDs))
+sd_ML      = _N.empty(len(partIDs))
+sd_BW      = _N.empty(len(partIDs))
+sd_BW2      = _N.empty(len(partIDs))
+
+sd_BT      = _N.empty(len(partIDs))
+sd_BL      = _N.empty(len(partIDs))
+m_M      = _N.empty(len(partIDs))
+pc_M1      = _N.empty(len(partIDs))
+pc_M2      = _N.empty(len(partIDs))
+pc_M3      = _N.empty(len(partIDs))
+m_MW      = _N.empty(len(partIDs))
+m_MT      = _N.empty(len(partIDs))
+m_ML      = _N.empty(len(partIDs))
+m_BW      = _N.empty(len(partIDs))
+m_BT      = _N.empty(len(partIDs))
+m_BL      = _N.empty(len(partIDs))
 
 actions_independent     = _N.empty((len(partIDs), 3))  #  for actions, conditions distinguished
 stay_amps     = _N.empty((len(partIDs), 3))  #  for actions, conditions distinguished
@@ -333,6 +359,14 @@ incomplete_data = []
 gkISI = gauKer(1)
 gkISI /= _N.sum(gkISI)
 
+RPS_ratios = _N.empty((len(partIDs), 3))
+RPS_ratiosMet = _N.empty(len(partIDs))
+
+#  DISPLAYED AS R,S,P
+#  look for RR RS RP
+#  look for SR SS SP
+#  look for PR PS PP
+
 
 for partID in partIDs:
     pid += 1
@@ -342,6 +376,35 @@ for partID in partIDs:
     _prob_mvs_STSW = dmp["cond_probsSTSW"][SHF_NUM][:, strtTr:]    
     _hnd_dat = dmp["all_tds"][SHF_NUM][strtTr:]
     end_strts[pid-1] = _N.mean(_hnd_dat[-1, 3] - _hnd_dat[0, 3])
+
+    hdcol = 0
+
+    hnd_dat_all[pid-1] = _hnd_dat
+    # if _hnd_dat[0, hdcol] == 1:
+    #     nRock0 += 1
+    # elif _hnd_dat[0, hdcol] == 2:
+    #     nScissor0 += 1
+    # elif _hnd_dat[0, hdcol] == 3:
+    #     nPaper0 += 1
+    # if _hnd_dat[30, hdcol] == 1:
+    #     nRock30 += 1
+    # elif _hnd_dat[30, hdcol] == 2:
+    #     nScissor30 += 1
+    # elif _hnd_dat[30, hdcol] == 3:
+    #     nPaper30 += 1
+    # if _hnd_dat[60, hdcol] == 1:
+    #     nRock60 += 1
+    # elif _hnd_dat[60, hdcol] == 2:
+    #     nScissor60 += 1
+    # elif _hnd_dat[60, hdcol] == 3:
+    #     nPaper60 += 1
+        
+    nR = len(_N.where(_hnd_dat[:, hdcol] == 1)[0])
+    nS = len(_N.where(_hnd_dat[:, hdcol] == 2)[0])
+    nP = len(_N.where(_hnd_dat[:, hdcol] == 3)[0])
+    #nRock    += nR
+    #nScissor += nS
+    #nPaper   += nP
 
     #_hnd_dat   = __hnd_dat[0:TO]
 
@@ -395,14 +458,52 @@ for partID in partIDs:
     ties_after_stay = _N.where(_hnd_dat[stay+1, 2] == 0)[0]
     stay_tie[pid-1] = len(ties_after_stay)
 
+    
     marginalCRs[pid-1] = _emp.marginalCR(_hnd_dat)
     prob_mvs  = _prob_mvs[:, 0:_hnd_dat.shape[0] - win]  #  is bigger than hand by win size
     prob_mvs_STSW  = _prob_mvs_STSW[:, 0:_hnd_dat.shape[0] - win]  #  is bigger than hand by win size    
     prob_mvs = prob_mvs.reshape((3, 3, prob_mvs.shape[1]))
     prob_mvs_STSW = prob_mvs_STSW.reshape((3, 2, prob_mvs_STSW.shape[1]))
     #  _N.sum(prob_mvs_STSW[0], axis=0) = 1, 1, 1, 1, 1, 1, (except at ends)
-    dbehv = _crut.get_dbehv(prob_mvs, gk)
+    dbehv = _crut.get_dbehv(prob_mvs, gk, equalize=False)
     maxs = _N.where((dbehv[0:TO-11] >= 0) & (dbehv[1:TO-10] < 0))[0] + (win//2) #  3 from label71
+
+    PCS=5    
+    prob_Mimic            = _N.empty((2, prob_mvs.shape[2]))
+    #sd_M[pid-1]               = _N.std(prob_mvs[0, 0] + prob_mvs[1, 1] + prob_mvs[2, 2])
+    sd_M[pid-1]               = _N.std(prob_mvs[0, 0] + prob_mvs[2, 2])
+    pc_M1[pid-1],pv               = _ss.pearsonr(prob_mvs[0, 0], prob_mvs[2, 2])
+    pc_M2[pid-1],pv               = _ss.pearsonr(prob_mvs[0, 0], prob_mvs[1, 1])
+    pc_M3[pid-1],pv               = _ss.pearsonr(prob_mvs[1, 1], prob_mvs[2, 2])        
+    sd_MW[pid-1]               = _N.std(prob_mvs[0, 0])
+    sd_MT[pid-1]               = _N.std(prob_mvs[1, 1])
+    sd_ML[pid-1]               = _N.std(prob_mvs[2, 2])
+    #sd_B[pid-1]               = _N.std(prob_mvs[0, 1] + prob_mvs[1, 2] + prob_mvs[2, 0])
+    #sd_B[pid-1]               = _N.std(prob_mvs[0, 1])
+    sd_BW[pid-1]               = _N.std(prob_mvs[0, 1])# / _N.mean(prob_mvs[0, 1])
+    sd_BW2[pid-1]               = _N.std(prob_mvs[0, 2])# / _N.mean(prob_mvs[0, 1])    
+    m_BW[pid-1]               = _N.mean(prob_mvs[0, 1])# / _N.mean(prob_mvs[0, 1])    
+    sd_BT[pid-1]               = _N.std(prob_mvs[1, 2])# / _N.mean(prob_mvs[1, 2])
+    m_BT[pid-1]               = _N.mean(prob_mvs[1, 2])# / _N.mean(prob_mvs[1, 2])    
+    sd_BL[pid-1]               = _N.std(prob_mvs[2, 0])# / _N.mean(prob_mvs[2, 0])
+    m_BL[pid-1]               = _N.mean(prob_mvs[2, 0])# / _N.mean(prob_mvs[2, 0])            
+    #sd_BT[pid-1]               = _N.std(prob_mvs[1, 2])# / (_N.abs(mn - 0.5)+0.1)
+    #sd_BL[pid-1]               = _N.std(prob_mvs[2, 0] + prob_mvs[2, 2])# / (_N.abs(mn - 0.5)+0.1)        
+    prob_Mimic[0]      = prob_mvs[0, 0]   #  DN | WIN
+    #prob_Mimic[1]      = prob_mvs[1, 1]   #  ST | TIE
+    prob_Mimic[1]      = prob_mvs[2, 2]   #  UP | LOS
+    prob_Beat            = _N.empty((3, prob_mvs.shape[2]))
+    prob_Beat[0]       = prob_mvs[0, 1]
+    prob_Beat[1]       = prob_mvs[1, 2]
+    prob_Beat[2]       = prob_mvs[2, 0]
+    entropyB[pid-1] = entropy3(prob_Beat.T, PCS)    
+    entropyM[pid-1] = entropy2(prob_Mimic.T, PCS)
+    
+    #l_maxs = maxs.tolist()
+    #if l_maxs[-1] == _hnd_dat.shape[0] - t1:
+    #    print("woawoawoa")
+    #if maxs[cut] + t0 < 0:
+    #    print("!!!!!!!!!!!!!!!!!!!!!!!!!!!  woa")
     MLAG = 20
     tlag, AC = _eu.autocorrelate(dbehv, MLAG)
     # dAC = _N.diff(AC)
@@ -437,7 +538,7 @@ for partID in partIDs:
     istrtend += prob_pcs.shape[0]
     strtend[pid-1+1] = istrtend
 
-    PCS=5
+
     #  prob_mvs[:, 0] - for each time point, the DOWN probabilities following 3 different conditions
     #  prob_mvs[0]    - for each time point, the DOWN probabilities following 3 different conditions    
 
@@ -568,10 +669,8 @@ for partID in partIDs:
     #pc, pv = _ss.pearsonr(isi[0:-1], isi[1:])
 
     #fisi = _N.convolve(isi, gkISI, mode="same")    
-    pc, pv = rm_outliersCC_neighbors(isi[0:-1], isi[1:])
-    #pc, pv = rm_outliersCC_neighbors(fisi[0:-1], fisi[1:])
-    #pc, pv = _ss.pearsonr(fisi[0:-1], fisi[1:])
-    #pc2, pv2 = rm_outliersCC_neighbors(fisi[0:-2], fisi[2:])
+    #pc, pv = rm_outliersCC_neighbors(isi[0:-1], isi[1:])
+    pc, pv = _ss.pearsonr(isi[0:-1], isi[1:])
     #fig = _plt.figure()
     #_plt.plot(fisi)
     #_plt.suptitle("%(1).3f    %(2).3f" % {"1" : pc, "2" : pc2})
@@ -639,10 +738,19 @@ for partID in partIDs:
         hnd_dat = _hnd_dat[inds]
 
         avgs = _N.empty((len(maxs)-2*cut, t1-t0))
+        #print("len(maxs)  %d" % len(maxs))
+        #print(maxs)
+
         for im in range(cut, len(maxs)-cut):
             #print(hnd_dat[maxs[im]+t0:maxs[im]+t1, 2].shape)
             #print("%(1)d %(2)d" % {"1" : maxs[im]+t0, "2" : maxs[im]+t1})
-            avgs[im-1, :] = hnd_dat[maxs[im]+t0:maxs[im]+t1, 2]
+            st = 0
+            en = t1-t0
+            if maxs[im] + t0 < 0:   #  just don't use this one
+                print("DON'T USE THIS ONE")
+                avgs[im-1, :] = 0
+            else:
+                avgs[im-1, :] = hnd_dat[maxs[im]+t0:maxs[im]+t1, 2]
 
         all_avgs[pid-1, sh] = _N.mean(avgs, axis=0)
         #fig.add_subplot(5, 5, pid)
@@ -709,11 +817,11 @@ for partID in partIDs:
 features_cab = ["isis", "isis_cv", "isis_corr", "isis_lv",
                 "entropyD", "entropyS", "entropyU",
                 "entropyT2", "entropyW2", "entropyL2",
-                "entropyT", "entropyW", "entropyL",                
+                "entropyT", "entropyW", "entropyL", "entropyM", "entropyB", "sd_M", "sd_BW", "sd_BW2", "sd_BT", "sd_BL", "m_BW", "m_BT", "m_BL", "sd_MW", "sd_MT", "sd_ML", "pc_M1", "pc_M2", "pc_M3", "moresimST", "moresimSW",
                 "pfrm_change36", "pfrm_change69", "pfrm_change912"]
-features_stat= ["u_or_d_res", "u_or_d_tie",
+features_stat= ["u_or_d_res", "u_or_d_tie","up_res", "dn_res",
                 "stay_res", "stay_tie",                
-                "sum_sd", "netwins", "moresim",
+                "netwins", "moresim",
                 "win_aft_win", "tie_aft_win", "los_aft_win",
                 "win_aft_tie", "tie_aft_tie", "los_aft_tie",
                 "win_aft_los", "tie_aft_los", "los_aft_los"]
@@ -746,9 +854,31 @@ dmp_dat["imax_imin_pfrm912"] = imax_imin_pfrm912
 dmp_dat["all_AI_weights"] = all_AI_weights
 dmp_dat["data"] = data
 dmp_dat["end_strts"] = end_strts
+dmp_dat["hnd_dat_all"] = hnd_dat_all
 
 
 dmpout = open("predictAQ28dat/AQ28_vs_RPS.dmp", "wb")
 pickle.dump(dmp_dat, dmpout, -1)
 dmpout.close()
-    
+
+# R S P
+#  see if RS > SR
+#  see if PR > RP
+transSkew = _N.abs(RSPtrans[:, 0, 1] - RSPtrans[:, 1, 0]) + _N.abs(RSPtrans[:, 0, 2] - RSPtrans[:, 2, 0]) + _N.abs(RSPtrans[:, 1, 2] - RSPtrans[:, 2, 1]) 
+
+
+#  If I favor R->S over S->R, I will also favor P->R over R->P
+#  I prefer finger 1->2, then I prefer finger 2->3, then I prefer finger 3->1
+
+preferFinger12  = RSPtrans[:, 0, 1] - RSPtrans[:, 1, 0]  #  1->2 is a DN
+preferFinger23  = RSPtrans[:, 1, 2] - RSPtrans[:, 2, 1]  #  2->3 is a DN
+preferFinger31  = RSPtrans[:, 2, 0] - RSPtrans[:, 0, 2]  #  3->1 is a DN
+
+#  Preference R #1, P #2, S #3
+#  people who do 
+
+#  Inwards from outer key
+#  (RSPtrans[:, 0, 1]-RSPtrans[:, 2, 1])
+#  _ss.pearsonr(RSPtrans[:, 0, 1], RSPtrans[:, 2, 1])   (negative)
+#  Lots of 12 tends to mean less 32
+#  

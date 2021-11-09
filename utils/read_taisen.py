@@ -101,11 +101,12 @@ def return_hnd_dat(day_time, tr0=0, tr1=None, know_gt=False, flip_human_AI=False
     rec_input_method = lines[iDataOffset].rstrip()
     iDataOffset += 1
     what_is_this = lines[iDataOffset].rstrip()
-    iDataOffset += 1    
-    rec_ini_percep = lines[iDataOffset].rstrip()
-    iDataOffset += 1    
-    rec_fin_percep = lines[iDataOffset].rstrip()
-    iDataOffset += 1    
+    iDataOffset += 1
+    if expt != "TMB1":
+        rec_ini_percep = lines[iDataOffset].rstrip()
+        iDataOffset += 1    
+        rec_fin_percep = lines[iDataOffset].rstrip()
+        iDataOffset += 1    
 
     if flip_human_AI:
         human_hands   = _N.array(re.split(" +", rec_per_hands), dtype=_N.int)
@@ -152,7 +153,10 @@ def return_hnd_dat(day_time, tr0=0, tr1=None, know_gt=False, flip_human_AI=False
     hnd_dat[:, 1] = per_hands
     hnd_dat[:, 2] = wtl
     #hnd_dat[:, 3] = 0
-    return hnd_dat, start, end, UA, cnstr, rec_input_method, rec_ini_percep, rec_fin_percep
+    if expt != "TMB1":
+        return hnd_dat, start, end, UA, cnstr, rec_input_method, rec_ini_percep, rec_fin_percep
+    else:
+        return hnd_dat, start, end, UA, cnstr, rec_input_method, None, None
 
 
 def get_consecutive_conditioned_hands(clpd_hnd_dat, h1_1=0, h0_1=0, h1_2=0, h0_2=0, h1_3=0, h0_3=0, conditional_col=2, wtl_rps=None):

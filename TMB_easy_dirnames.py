@@ -31,14 +31,13 @@ if (expt == "TMB1"):
     if old_TMB1:
         dates = _rt.date_range(start='7/13/2021', end='8/17/2021')
     else:
-        dates = _rt.date_range(start='8/18/2021', end='11/30/2021')    
+        dates = _rt.date_range(start='8/18/2021', end='11/30/2021')
         
 #dates = pd.date_range(start='7/1/2021', end='7/31/2021')
 
 for date in dates:
 #    _date = "%(yr)d%(mn)2d%(dy)2d" % {"yr" : date_tmstmp.year, "mn" : date_tmstmp.month, "dy" : date_tmstmp.day}
 #    date  = _date.replace(" ", "0")
-
 
     hr = 0
     mn = 0
