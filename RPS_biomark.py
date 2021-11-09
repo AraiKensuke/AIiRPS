@@ -817,7 +817,7 @@ for partID in partIDs:
 features_cab = ["isis", "isis_cv", "isis_corr", "isis_lv",
                 "entropyD", "entropyS", "entropyU",
                 "entropyT2", "entropyW2", "entropyL2",
-                "entropyT", "entropyW", "entropyL", "entropyM", "entropyB", "sd_M", "sd_BW", "sd_BW2", "sd_BT", "sd_BL", "m_BW", "m_BT", "m_BL", "sd_MW", "sd_MT", "sd_ML", "pc_M1", "pc_M2", "pc_M3", "moresimST", "moresimSW",
+                "entropyT", "entropyW", "entropyL", "entropyM", "entropyB", "sd_M", "sd_BW", "sd_BW2", "sd_BT", "sd_BL", "m_BW", "m_BT", "m_BL", "sd_MW", "sd_MT", "sd_ML", "pc_M1", "pc_M2", "pc_M3",
                 "pfrm_change36", "pfrm_change69", "pfrm_change912"]
 features_stat= ["u_or_d_res", "u_or_d_tie","up_res", "dn_res",
                 "stay_res", "stay_tie",                
@@ -861,24 +861,24 @@ dmpout = open("predictAQ28dat/AQ28_vs_RPS.dmp", "wb")
 pickle.dump(dmp_dat, dmpout, -1)
 dmpout.close()
 
-# R S P
-#  see if RS > SR
-#  see if PR > RP
-transSkew = _N.abs(RSPtrans[:, 0, 1] - RSPtrans[:, 1, 0]) + _N.abs(RSPtrans[:, 0, 2] - RSPtrans[:, 2, 0]) + _N.abs(RSPtrans[:, 1, 2] - RSPtrans[:, 2, 1]) 
+# # R S P
+# #  see if RS > SR
+# #  see if PR > RP
+# transSkew = _N.abs(RSPtrans[:, 0, 1] - RSPtrans[:, 1, 0]) + _N.abs(RSPtrans[:, 0, 2] - RSPtrans[:, 2, 0]) + _N.abs(RSPtrans[:, 1, 2] - RSPtrans[:, 2, 1]) 
 
 
-#  If I favor R->S over S->R, I will also favor P->R over R->P
-#  I prefer finger 1->2, then I prefer finger 2->3, then I prefer finger 3->1
+# #  If I favor R->S over S->R, I will also favor P->R over R->P
+# #  I prefer finger 1->2, then I prefer finger 2->3, then I prefer finger 3->1
 
-preferFinger12  = RSPtrans[:, 0, 1] - RSPtrans[:, 1, 0]  #  1->2 is a DN
-preferFinger23  = RSPtrans[:, 1, 2] - RSPtrans[:, 2, 1]  #  2->3 is a DN
-preferFinger31  = RSPtrans[:, 2, 0] - RSPtrans[:, 0, 2]  #  3->1 is a DN
+# preferFinger12  = RSPtrans[:, 0, 1] - RSPtrans[:, 1, 0]  #  1->2 is a DN
+# preferFinger23  = RSPtrans[:, 1, 2] - RSPtrans[:, 2, 1]  #  2->3 is a DN
+# preferFinger31  = RSPtrans[:, 2, 0] - RSPtrans[:, 0, 2]  #  3->1 is a DN
 
-#  Preference R #1, P #2, S #3
-#  people who do 
+# #  Preference R #1, P #2, S #3
+# #  people who do 
 
-#  Inwards from outer key
-#  (RSPtrans[:, 0, 1]-RSPtrans[:, 2, 1])
-#  _ss.pearsonr(RSPtrans[:, 0, 1], RSPtrans[:, 2, 1])   (negative)
-#  Lots of 12 tends to mean less 32
-#  
+# #  Inwards from outer key
+# #  (RSPtrans[:, 0, 1]-RSPtrans[:, 2, 1])
+# #  _ss.pearsonr(RSPtrans[:, 0, 1], RSPtrans[:, 2, 1])   (negative)
+# #  Lots of 12 tends to mean less 32
+# #  
