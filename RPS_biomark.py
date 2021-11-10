@@ -814,15 +814,17 @@ for partID in partIDs:
         aboves.extend(ab)
 
 #  More sim:  If large
-features_cab = ["isis", "isis_cv", "isis_corr", "isis_lv",
+features_cab = [#"isis", "isis_cv", "isis_corr", "isis_lv",
                 "entropyD", "entropyS", "entropyU",
                 "entropyT2", "entropyW2", "entropyL2",
-                "entropyT", "entropyW", "entropyL", "entropyM", "entropyB", "sd_M", "sd_BW", "sd_BW2", "sd_BT", "sd_BL", "m_BW", "m_BT", "m_BL", "sd_MW", "sd_MT", "sd_ML", "pc_M1", "pc_M2", "pc_M3",
-                "pfrm_change36", "pfrm_change69", "pfrm_change912"]
+                "entropyT", "entropyW", "entropyL", "entropyM", "entropyB", "sd_M", "sd_BW", "sd_BW2", "sd_BT", "sd_BL","sd_MT", "sd_ML", "pc_M1", "pc_M2", "pc_M3", "pfrm_change69"]
+#    "m_BW", "m_BT", "m_BL", "sd_MW", 
+#                "pfrm_change36", "pfrm_change69", "pfrm_change912"]
 features_stat= ["u_or_d_res", "u_or_d_tie","up_res", "dn_res",
                 "stay_res", "stay_tie",                
-                "netwins", "moresim",
-                "win_aft_win", "tie_aft_win", "los_aft_win",
+                #"netwins",
+                "moresim",
+                #"win_aft_win", "tie_aft_win", "los_aft_win",
                 "win_aft_tie", "tie_aft_tie", "los_aft_tie",
                 "win_aft_los", "tie_aft_los", "los_aft_los"]
 
