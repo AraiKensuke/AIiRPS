@@ -1,4 +1,4 @@
-from AIiRPS.models import empirical
+import AIiRPS.models.empirical_ken as empirical
 from filter import gauKer
 import numpy as _N
 import matplotlib.pyplot as _plt
@@ -74,18 +74,21 @@ for datetm in datetms:
 
         weights, iw = sim_prc.recreate_percep_istate(td, ini_percep, fin_percep)
         
-        ngs, ngsSTSW, all_tds, TGames  = empirical.empirical_NGS(datetm, win=wins, SHUF=SHUFFLES, flip_human_AI=flip_human_AI, covariates=cov, expt=expt, visit=visit)
+        ngs, ngsRPS, ngsSTSW, all_tds, TGames  = empirical.empirical_NGS(datetm, win=wins, SHUF=SHUFFLES, flip_human_AI=flip_human_AI, covariates=cov, expt=expt, visit=visit)
 
         if ngs is not None:
             fNGS = _N.empty((SHUFFLES+1, ngs.shape[1], ngs.shape[2]))
+            fNGSRPS = _N.empty((SHUFFLES+1, ngs.shape[1], ngs.shape[2]))            
             fNGSSTSW = _N.empty((SHUFFLES+1, ngsSTSW.shape[1], ngsSTSW.shape[2]))            
             t_ms = _N.mean(_N.diff(all_tds[0, :, 3]))
             for sh in range(SHUFFLES+1):
                 for i in range(9):
                     if gk_w > 0:
                         fNGS[sh, i] = _N.convolve(ngs[sh, i], gk, mode="same")
+                        fNGSRPS[sh, i] = _N.convolve(ngsRPS[sh, i], gk, mode="same")                        
                     else:
                         fNGS[sh, i] = ngs[sh, i]
+                        fNGSRPS[sh, i] = ngsRPS[sh, i]                        
             for sh in range(SHUFFLES+1):
                 for i in range(6):
                     if gk_w > 0:
@@ -95,6 +98,7 @@ for datetm in datetms:
 
             pklme = {}
             pklme["cond_probs"] = fNGS
+            pklme["cond_probsRPS"] = fNGSRPS            
             pklme["cond_probsSTSW"] = fNGSSTSW
             pklme["all_tds"] = all_tds
                 

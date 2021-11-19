@@ -32,7 +32,7 @@ def empirical_NGS(dat, SHUF=0, win=20, flip_human_AI=False, covariates=_AIconst.
         all_tds[shf] = td
 
         scores_wtl1 = _N.zeros(Tgame-1, dtype=_N.int)
-        scores_tr10 = _N.zeros(Tgame-1, dtype=_N.int)
+        scores_tr10 = _N.zeros(Tgame-1, dtype=_N.int)   #  transition
 
         ################################# wtl 1 steps back
         if covariates == _AIconst._WTL:
@@ -52,16 +52,29 @@ def empirical_NGS(dat, SHUF=0, win=20, flip_human_AI=False, covariates=_AIconst.
         scores_wtl1[ties_m1] = 1
         scores_wtl1[loss_m1] = 0
         ################################# tr from 1->0
+        #####STAYS
         stays = _N.where(td[0:Tgame-1, 0] == td[1:Tgame, 0])[0]  
         scores_tr10[stays]   = 2
+        #####DNGRAD        
         dngrd = _N.where(((td[0:Tgame-1, 0] == 1) & (td[1:Tgame, 0] == 2)) |
                          ((td[0:Tgame-1, 0] == 2) & (td[1:Tgame, 0] == 3)) |
                          ((td[0:Tgame-1, 0] == 3) & (td[1:Tgame, 0] == 1)))[0]
         scores_tr10[dngrd]   = 1
+        #####UPGRAD        
         upgrd = _N.where(((td[0:Tgame-1, 0] == 1) & (td[1:Tgame, 0] == 3)) |
                          ((td[0:Tgame-1, 0] == 2) & (td[1:Tgame, 0] == 1)) |
                          ((td[0:Tgame-1, 0] == 3) & (td[1:Tgame, 0] == 2)))[0]
         scores_tr10[upgrd]   = 0
+        #  UP | LOS  = scores 0
+        #  UP | TIE  = scores 1
+        #  UP | WIN  = scores 2
+        #  DN | LOS  = scores 3
+        #  DN | TIE  = scores 4
+        #  DN | WIN  = scores 5
+        #  ST | LOS  = scores 6
+        #  ST | TIE  = scores 7
+        #  ST | WIN  = scores 8
+
         scores    = scores_wtl1 + 3*scores_tr10
         scores_pr = scores_wtl1
 

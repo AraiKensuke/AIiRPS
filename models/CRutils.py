@@ -1,12 +1,12 @@
 import numpy as _N
 
 def get_dbehv(prob_mvs, gk, equalize=False):
-    ab_d_prob_mvs = _N.abs(_N.diff(prob_mvs, axis=2))
+    ab_d_prob_mvs = _N.abs(_N.diff(prob_mvs, axis=2))  #  time derivative
     if equalize:
         std_r = _N.std(ab_d_prob_mvs, axis=2).reshape(3, 3, 1)
         ab_d_prob_mvs /= std_r
-    behv = _N.sum(_N.sum(ab_d_prob_mvs, axis=1), axis=0)
-    _dbehv = _N.diff(behv)
+    behv = _N.sum(_N.sum(ab_d_prob_mvs, axis=1), axis=0)  #  1-D timeseries
+    _dbehv = _N.diff(behv)       #  use to find maxes of time derivative
     if gk is not None:
         return _N.convolve(_dbehv, gk, mode="same")
     else:

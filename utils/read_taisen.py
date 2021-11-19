@@ -270,7 +270,7 @@ def write_hnd_dat(hnd_dat, fn):
     fp.write("%s" % dat_strng)
     fp.close()
 
-def filterRPSdats(expt, dates, visits=[1], domainQ=_TRUE_AND_FALSE_, demographic=_TRUE_AND_FALSE_, mentalState=_TRUE_AND_FALSE_, maxIGI=20000, minIGI=0, min_meanIGI=1000, max_meanIGI=10000, MinWinLossRat=0, has_useragent=True, has_start_and_end_times=True, has_constructor=True, blocks=1, ngames=None):
+def filterRPSdats(expt, dates, visits=[1], domainQ=_TRUE_AND_FALSE_, demographic=_TRUE_AND_FALSE_, mentalState=_TRUE_AND_FALSE_, maxIGI=20000, minIGI=0, min_meanIGI=1000, max_meanIGI=10000, MinWinLossRat=0, has_useragent=True, has_start_and_end_times=True, has_constructor=True, blocks=1, ngames=None, print_warn=False):
     """
     visit:   1, 2, 3    
     works like a filter
@@ -289,6 +289,9 @@ def filterRPSdats(expt, dates, visits=[1], domainQ=_TRUE_AND_FALSE_, demographic
             for time in dats4date:   #  the data sets for this day
                 dattmdir = "%(dd)s/%(tm)s" % {"dd" : datdir, "tm" : time}
 
+                warnings = ["", ""]
+                datfilewarnings = ["not found", "not found"]        
+                
                 demoG = False
                 domQ  = False
                 goods = [False] * len(visits)
@@ -313,6 +316,8 @@ def filterRPSdats(expt, dates, visits=[1], domainQ=_TRUE_AND_FALSE_, demographic
                         datfn = "%(dd)s/%(v)d/block%(bl)d_AI.dat" % {"dd" : dattmdir, "v" : visit, "bl" : blk}
 
                         if os.access(datfn, os.F_OK):
+                            datfilewarnings[visit-1] = "found"
+
                             if ((demoG == True) and ((demographic == _TRUE_AND_FALSE_) or (demographic == _TRUE_ONLY_))) or \
                                ((demoG == False) and ((demographic == _TRUE_AND_FALSE_) or (demographic == _FALSE_ONLY_))):
                                 inclDemo = True
@@ -353,11 +358,14 @@ def filterRPSdats(expt, dates, visits=[1], domainQ=_TRUE_AND_FALSE_, demographic
                                         ngameCondMet[blk-1] = 0
                                 else:
                                         ngameCondMet[blk-1] = 1
+
+                                warnings[visit-1] = "IGI %(1)d  WinCon %(2)d  ngame %(3)d  allIGI %(4)d" % {"1" : igiCondMet[blk-1], "2" : winCondMet[blk-1], "3" : ngameCondMet[blk-1], "4" : all_igiCondMet[blk-1]}
                                         
                                 if (igiCondMet[blk-1] == 1) and (winCondMet[blk-1] == 1) and (ngameCondMet[blk-1] == 1) and (all_igiCondMet[blk-1] == 1):
                                     fn_for_block.append(time)
                                     dat_for_block.append(theDat)
                                     cnstr_for_block.append(cnstr)
+                                
                                     #hnd_dats[time] = theDat
                                     #files.append(time)
                                     #hnd_dats[time] = theDat
@@ -385,12 +393,16 @@ def filterRPSdats(expt, dates, visits=[1], domainQ=_TRUE_AND_FALSE_, demographic
                                 constructors[time] = constructors0
                             else:
                                 print("!!! duplicate constructor found as constr %s" % time)                                
-                                goods[visit-1] = False                                
+                                goods[visit-1] = False      
 
                 good = True
                 for iv in range(len(visits)):
                     if goods[iv] == False:
                         good = False
+                if print_warn:
+                    print(time)
+                    print(warnings)
+                    print(datfilewarnings)                
                 if good:
                     files.append(time)
                         

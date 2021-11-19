@@ -97,6 +97,11 @@ def unskew(dat):
     min_im = _N.where(_N.abs(sk) == _N.min(_N.abs(sk)))[0][0]
     return _N.exp(dat / (ms[min_im]*_N.mean(dat)))
 
+def standardize(y):
+    ys = y - _N.mean(y)
+    ys /= _N.std(ys)
+    return ys
+
 def depickle(s):
      import pickle
      with open(s, "rb") as f:
@@ -243,12 +248,8 @@ def rm_outliersCC(x, y):
     #print("%(ths)d" % {"ths" : len(ths)})
     return rmvd, x[interiorPts], y[interiorPts]#, _ss.pearsonr(x[interiorPts], y[interiorPts])
 
-def standardize(y):
-    ys = y - _N.mean(y)
-    ys /= _N.std(ys)
-    return ys
 
-lm = depickle("predictAQ28dat/AQ28_vs_RPS.dmp")
+lm = depickle("predictAQ28dat/AQ28_vs_RPS_1.dmp")
 
 features_cab = lm["features_cab"]
 features_stat = lm["features_stat"]
@@ -261,7 +262,7 @@ for ca in cmp_againsts:
         exec("temp = unskew(temp)" % {"ca" : ca})
     exec("%(ca)s_s = standardize(temp)" % {"ca" : ca})
 
-look_at_AQ    = False
+look_at_AQ    = True
 marginalCRs   = eval("lm[\"marginalCRs\"]")
 AQ28scrs      = eval("lm[\"AQ28scrs\"]")
 soc_skils     = eval("lm[\"soc_skils\"]")
@@ -294,9 +295,11 @@ winsz=15
 #entropyUD2 = _N.exp(entropyUD2 / _N.mean(entropyUD2))
 #entropyS2 = _N.exp(entropyS2 / _N.mean(entropyS2))
 
-ths = _N.where((AQ28scrs > 35) & (rout > 4))[0]
 #ths = _N.where((AQ28scrs > 35) & (rout > 4))[0]
-#ths = _N.where((AQ28scrs > 35))[0]
+#ths = _N.where((AQ28scrs > 35) & (rout > 4))[0]
+ths = _N.where((AQ28scrs > 35))[0]
+print("..............len(ths)        %d" % len(ths))
+
 #ths  = _N.arange(AQ28scrs.shape[0])
 
 if look_at_AQ:
@@ -701,33 +704,47 @@ xIMAG      = [[entropyU_s, -1],
               [stay_tie, 0.04],
               [win_aft_tie, 0.6],
               [sd_M_s, 0.1],
-              [los_aft_tie_s, -0.7]]
+              [los_aft_tie_s, -0.7],
+              [AIfts0_s, 1.1],
+              [AIfts4_s, 0.65]]              
 xSS        = [[moresim_s, 1],
               [win_aft_tie_s, 1],
               [los_aft_tie_s, 0.7],                            
-              [sd_MW_s, -0.5],                            
+#              [sd_MW_s, -0.5],                            
               [pfrm_change69_s, 1.3],
               [stay_tie_s, 0.9],              
               [entropyT2_s, 0.8],
-              [u_or_d_res_s, -0.5]]
+              [u_or_d_res_s, -0.5],
+              [AIfts0_s, 0.2]]
 xSW        = [[tie_aft_tie_s, -1],
               [win_aft_tie_s, 1.4],
               [pfrm_change69_s, 1.6],
               [entropyW2_s, 0.8],
               [u_or_d_tie_s, -0.3]]
+xROUT      = [[AIfts1_s, -1],
+              [sd_BW_s, -0.5],
+              [AIent1_s, 0.5]]
 xFACT      = [[sd_BW_s, -1],
               [entropyL_s, 1.2],
-              [entropyW_s, 0.7]]
+              [entropyW_s, 0.7],
+              [AIfts5_s, -0.7],
+              [USDdiff_s, -0.7]]
 xAQ28      = [[win_aft_tie_s, 1],
               [stay_tie_s, 0.7],
               [pfrm_change69_s, 0.7],
               [pc_M2_s, 0.3],
               [sd_BW_s, -0.6],
-              [entropyU_s, -0.1]]
+              [entropyU_s, -0.1],
+              [AIfts0_s, 0.6]]
 
 fig = _plt.figure(figsize=(8, 6))
 ifig = 0
-for xy in [[xIMAG, imag, "imag"], [xSS, soc_skils, "soc_skils"], [xSW, switch, "switch"], [xFACT, fact_pat, "fact_pat"], [xAQ28, AQ28scrs, "AQ28"]]:
+#for xy in [[xIMAG, imag, "imag"], [xSS, soc_skils, "soc_skils"], [xSW, switch, "switch"], [xFACT, fact_pat, "fact_pat"], [xAQ28, AQ28scrs, "AQ28"]]:
+#for xy in [[xSS, soc_skils, "soc_skils"]]:
+#for xy in [[xAQ28, AQ28scrs, "AQ28"]]:
+#for xy in [[xROUT, rout, "rout"]]:
+#for xy in [[xIMAG, imag, "imag"]]:
+for xy in [[xFACT, fact_pat, "fact_pat"]]:
     ifig += 1
     xReliable, yReliable = featureLC(xy[0], xy[1], ths, folds=3)
     fig.add_subplot(3, 2, ifig)

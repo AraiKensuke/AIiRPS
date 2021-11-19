@@ -67,7 +67,7 @@ nicknames = {"FixedSequence(__moRSP__, " +
 
 #partIDs, dats, cnstrs = _rt.filterRPSdats("TMB1", dates, visits=[1], domainQ=_rt._TRUE_ONLY_, demographic=_rt._TRUE_AND_FALSE_, mentalState=_rt._TRUE_AND_FALSE_, minIGI=100, maxIGI=30000, MinWinLossRat=0.1, has_useragent=True, has_start_and_end_times=True, has_constructor=True, blocks=4)
 
-partIDs, dats, cnstrs = _rt.filterRPSdats("TMB1", dates, visits=[1], domainQ=_rt._TRUE_ONLY_, demographic=_rt._TRUE_AND_FALSE_, mentalState=_rt._TRUE_AND_FALSE_, minIGI=400, MinWinLossRat=0., has_useragent=True, has_start_and_end_times=True, has_constructor=True, blocks=4, ngames=40)
+partIDs, dats, cnstrs = _rt.filterRPSdats("TMB1", dates, visits=[1], domainQ=_rt._TRUE_ONLY_, demographic=_rt._TRUE_AND_FALSE_, mentalState=_rt._TRUE_AND_FALSE_, min_meanIGI=400, max_meanIGI=15000, minIGI=100, MinWinLossRat=0., has_useragent=True, has_start_and_end_times=True, has_constructor=True, blocks=4, ngames=40)
 
 
 #  first, let's just list out the types of constructors each
