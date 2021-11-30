@@ -10,7 +10,8 @@ def recreate_percep_istate(hnd_dat, ini_percep_str, fin_percep_str):
     prc_N = 2
     weights_snap = _N.empty((3, hnd_dat.shape[0]+1, 3, 3, prc_N ))
     diff_tots     = _N.zeros(3)
-    
+
+    pred_unks     = _N.zeros((3, hnd_dat.shape[0]+1, 3))
     for init_pm in range(1, 4):
         prc = _prcp.perceptronJS(prc_N)
         prc.prc_weight[:, :, :] = 0
@@ -20,18 +21,23 @@ def recreate_percep_istate(hnd_dat, ini_percep_str, fin_percep_str):
                     prc.prc_weight[i, j, k] = ini_as_arr[(6*i) + 2*j + k]
         diff_tot = 0
         pm = init_pm
+        
         for im in range(hnd_dat.shape[0]):  #  Goo choki paa
             m = hnd_dat[im, 0]
             weights_snap[init_pm-1, im] = prc.prc_weight
             pred_HP_move = prc.predict(pm)
             #  (1+1) % 3 + 1 = 3
             recr_prc_mvs[im] = (pred_HP_move+1) % 3 + 1
+            srtd = _N.sort(prc.pred)
+            pred_unks[init_pm-1, im] = prc.pred
+            
             #print("%(1)d  %(2)d" % {"1" : hnd_dat[im, 1], "2" : ((pred_HP_move+1) % 3 + 1)})
             diff_tot += _N.abs(hnd_dat[im, 1] - ((pred_HP_move+1) % 3 + 1))
             pm = m
-        weights_snap[init_pm-1, hnd_dat.shape[0]] = prc.prc_weight            
+        weights_snap[init_pm-1, hnd_dat.shape[0]] = prc.prc_weight
+        pred_unks[init_pm-1, hnd_dat.shape[0]] = prc.pred
         diff_tots[init_pm - 1] = diff_tot
     the0s = _N.where(diff_tots == _N.min(diff_tots))[0]
 
-    return weights_snap, the0s[0]
+    return weights_snap, pred_unks, the0s[0]
         

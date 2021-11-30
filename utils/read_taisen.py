@@ -465,11 +465,10 @@ def AQ28(aq28fn):
     #18  14C"I find making up stories easy.",
     #19  20A"Reading a story, I find it difficult to work out the character's intentions.",
     #20  36C"I find it easy to work out what someone is thinking or feeling.",
-    
-    #--- FACT NUMB AND PATT
     #21  42A"I find it difficult to imagine what it would be like to be someone else.",
     #22  45A"I find it difficult to work out people's intentions.",
     #23  50C"I find it easy to play games with children that involve pretending.",
+    #--- FACT NUMB AND PATT    
     #24  6A "I usually notice car number plates or similar strings of information.",
     #25  9A "I am fascinated by dates.",
     
@@ -529,6 +528,117 @@ def AQ28(aq28fn):
     ind_scrs = flip*5 + -1*flip*answers + (1-flip)*answers
 
     return _N.sum(ind_scrs), _N.sum(ind_scrs[0:7]), _N.sum(ind_scrs[7:11]), _N.sum(ind_scrs[11:15]), _N.sum(ind_scrs[15:23]), _N.sum(ind_scrs[23:])
+
+def no_duplicates(lst):
+    duplicate = False
+    for i in range(len(lst)):
+        for j in range(i+1, len(lst)):
+            if lst[i] == lst[j]:
+                duplicate = True
+    return (not duplicate)
+
+def AQ28ans(aq28fn):
+    #“Definitely agree” or “slightly agree” responses scored 1 point, on the following items:
+    #  1, 2, 4, 5, 6, 7, 9, 12, 13, 16, 18, 19, 20, 21, 22, 23, 26, 33, 35, 39, 41, 42, 43, 45, 46.
+    #“Definitely disagree” or “slightly dis- agree” responses scored 1 point, on the following items:
+    #  3, 8, 10, 11, 14, 15, 17, 24, 25, 27, 28, 29, 30, 31, 32, 34, 36, 37, 38, 40, 44, 47, 48, 49, 50.
+
+    #A   Agree has high score
+    #C
+    #--- SOCIAL SKILLS     [0, 1, 2, 3, 4, 5, 6]
+    #1   1C  "I prefer to do things with others rather than on my own.",
+    #2   11C "I find social situations easy.",
+    #3   13A "I would rather go to a library than to a party.",
+    #4   15C "I find myself drawn more strongly to people than to things.",
+    #5   22A "I find it hard to make new friends.",
+    
+    #6   44C "I enjoy social occasions.",
+    #7   47C "I enjoy meeting new people.",
+    #--- ROUTINE    [7, 8, 9, 10]
+    #8   2A  "I prefer to do things the same way over and over again.",
+    #9   25C "It does not upset me if my daily routine is disturbed.",
+    #10  34C"I enjoy doing things spontaneously.",
+    
+    #11  46A"New situations make me anxious.",
+    #--- SWITCHING  [11, 12, 13, 14]
+    #12  4A "I frequently get strongly absorbed in one thing.",
+    #13  10C"I can easily keep track of several different people's conversations.",
+    #14  32C"I find it easy to do more than one thing at once.",
+    #15  37C"If there is an interruption, I can switch back very quickly.",
+    #--- IMAG       [15, 16, 17, 18, 19, 20, 21, 22]
+    #  16, 17 <- imagingn  15, 16,
+    #  18, 23 <--- pretending  
+    #  19, 20, 21, 22  <-- other's intentions  18, 19, 20, 21
+    #  20, 22  <-- other's intentions  19, 21
+    #16  3C "Trying to imagine something, I find it easy to create a picture in my mind.",
+    #17  8C "Reading a story, I can easily imagine what the characters might look like.",
+    #18  14C"I find making up stories easy.",
+    #19  20A"Reading a story, I find it difficult to work out the character's intentions.",
+    #20  36C"I find it easy to work out what someone is thinking or feeling.",
+    
+
+    #21  42A"I find it difficult to imagine what it would be like to be someone else.",
+    #22  45A"I find it difficult to work out people's intentions.",
+    #23  50C"I find it easy to play games with children that involve pretending.    #--- FACT NUMB AND PATT",     [23, 24, 25, 26, 27]
+    #24  6A "I usually notice car number plates or similar strings of information.",
+    #25  9A "I am fascinated by dates.",
+    
+    #26  19A"I am fascinated by numbers.",
+    #27  23A"I notice patterns in things all the time.",
+    #28  41A"I like to collect information about categories of things."
+
+    flip = _N.array([1, 1, 0, 1, 0,
+                     1, 1, 0, 1, 1,
+                     0, 0, 1, 1, 1,
+                     1, 1, 1, 0, 1,
+                     0, 0, 1, 0, 0,
+                     0, 0, 0])
+    #1A   #  strongly agree    = autism
+    #11C  #  strongly disagree = autism
+    #13A  #  strongly agree    = autism
+    #15C
+    #22A
+    
+    #44C
+    #47C
+    #2A 
+    #25C
+    #34C
+    
+    #46A
+    #4A 
+    #10C
+    #32C
+    #37C
+                 
+    #3C
+    #8C 
+    #14C
+    #20A
+    #36C
+    
+    #42A
+    #45A
+    #50C
+    #6A 
+    #9A
+                 
+    #19A
+    #23A
+    #41A
+
+    answers = _N.loadtxt(aq28fn)
+
+    # tot1 = 0
+    # for i in range(28):
+    #     if flip[i] == 0:
+    #         tot1 += answers[i]
+    #     elif flip[i] == 1:
+    #         tot1 += 5 - answers[i]   # 5-1, 5-2, 5-3, 5-4
+
+    ind_scrs = flip*5 + -1*flip*answers + (1-flip)*answers
+
+    return ind_scrs[_N.array([0, 1, 2, 3, 4, 5, 6])], ind_scrs[_N.array([7, 8, 9, 10])], ind_scrs[_N.array([11, 12, 13, 14])], ind_scrs[_N.array([15, 16, 17, 18, 19, 20, 21, 22])], ind_scrs[_N.array([23, 24, 25, 26, 27])]
 
 def no_duplicates(lst):
     duplicate = False

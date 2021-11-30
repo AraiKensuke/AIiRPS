@@ -18,8 +18,9 @@ def empirical_NGS(dat, SHUF=0, win=20, flip_human_AI=False, covariates=_AIconst.
     if _td is None:
         return None, None
     Tgame= _td.shape[0]
-    cprobs     = _N.zeros((SHUF+1, 9, Tgame-win))
-    cprobsRPS     = _N.zeros((SHUF+1, 9, Tgame-win))    
+    cprobs     = _N.zeros((SHUF+1, 9, Tgame-win))    # UDS | WTL
+    cprobsRPS     = _N.zeros((SHUF+1, 9, Tgame-win)) # RPS | WTL
+    cprobsDSURPS     = _N.zeros((SHUF+1, 9, Tgame-win)) # UDS | RPS
     cprobsSTSW = _N.zeros((SHUF+1, 6, Tgame-win))    
 
     all_tds = _N.empty((SHUF+1, _td.shape[0], _td.shape[1]), dtype=_N.int)
@@ -33,26 +34,26 @@ def empirical_NGS(dat, SHUF=0, win=20, flip_human_AI=False, covariates=_AIconst.
         all_tds[shf] = td
 
         scores_wtl1 = _N.zeros(Tgame-1, dtype=_N.int)
-        scores_rps0 = _N.zeros(Tgame-1, dtype=_N.int)        
+        scores_rps0 = _N.zeros(Tgame-1, dtype=_N.int)
+        scores_rps1 = _N.zeros(Tgame-1, dtype=_N.int)                
         scores_tr10 = _N.zeros(Tgame-1, dtype=_N.int)   #  transition
 
         ################################# wtl 1 steps back
-        if covariates == _AIconst._WTL:
-            wins_m1 = _N.where(td[0:Tgame-1, 2] == 1)[0]
-            ties_m1 = _N.where(td[0:Tgame-1, 2] == 0)[0]
-            loss_m1 = _N.where(td[0:Tgame-1, 2] == -1)[0]
-        elif covariates == _AIconst._HUMRPS:            
-            wins_m1 = _N.where(td[0:Tgame-1, 0] == 1)[0]
-            ties_m1 = _N.where(td[0:Tgame-1, 0] == 2)[0]
-            loss_m1 = _N.where(td[0:Tgame-1, 0] == 3)[0]
-        elif covariates == _AIconst._AIRPS:            
-            wins_m1 = _N.where(td[0:Tgame-1, 1] == 1)[0]
-            ties_m1 = _N.where(td[0:Tgame-1, 1] == 2)[0]
-            loss_m1 = _N.where(td[0:Tgame-1, 1] == 3)[0]
+        wins_m1 = _N.where(td[0:Tgame-1, 2] == 1)[0]
+        ties_m1 = _N.where(td[0:Tgame-1, 2] == 0)[0]
+        loss_m1 = _N.where(td[0:Tgame-1, 2] == -1)[0]
+        ################################# rps 1 steps back
+        R_m1 = _N.where(td[0:Tgame-1, 0] == 1)[0]
+        S_m1 = _N.where(td[0:Tgame-1, 0] == 2)[0]
+        P_m1 = _N.where(td[0:Tgame-1, 0] == 3)[0]
 
         scores_wtl1[wins_m1] = 2
         scores_wtl1[ties_m1] = 1
         scores_wtl1[loss_m1] = 0
+        scores_rps1[R_m1] = 2
+        scores_rps1[S_m1] = 1
+        scores_rps1[P_m1] = 0
+        
         ################################# tr from 1->0
         #####STAYS
         stays = _N.where(td[0:Tgame-1, 0] == td[1:Tgame, 0])[0]  
@@ -70,8 +71,10 @@ def empirical_NGS(dat, SHUF=0, win=20, flip_human_AI=False, covariates=_AIconst.
         #####ROCK
         rocks    = _N.where(td[1:Tgame, 0] == 1)[0]
         scores_rps0[rocks]   = 0
+        #####SCISSOR
         scissors = _N.where(td[1:Tgame, 0] == 2)[0]
         scores_rps0[scissors]   = 1
+        #####PAPER     
         papers   = _N.where(td[1:Tgame, 0] == 3)[0]
         scores_rps0[papers]   = 2
         #  UP | LOS  = scores 0
@@ -84,8 +87,9 @@ def empirical_NGS(dat, SHUF=0, win=20, flip_human_AI=False, covariates=_AIconst.
         #  ST | TIE  = scores 7
         #  ST | WIN  = scores 8
 
-        scores    = scores_wtl1 + 3*scores_tr10
-        scoresRPS = scores_wtl1 + 3*scores_rps0
+        scores       = scores_wtl1 + 3*scores_tr10  #  UDS | WTL
+        scoresRPS    = scores_wtl1 + 3*scores_rps0  #  RPS | WTL
+        scoresDSURPS = scores_rps1 + 3*scores_tr10  #  UDS | RPS
         scores_pr = scores_wtl1
 
         i = 0
@@ -115,6 +119,21 @@ def empirical_NGS(dat, SHUF=0, win=20, flip_human_AI=False, covariates=_AIconst.
             n_los_R  = len(_N.where(scoresRPS[i:i+win] == 6)[0])
             n_los_S  = len(_N.where(scoresRPS[i:i+win] == 3)[0])
             n_los_P  = len(_N.where(scoresRPS[i:i+win] == 0)[0])
+            ######################################
+            n_R      = len(_N.where(scores_rps1[i:i+win] == 2)[0])
+            n_R_st = len(_N.where(scoresDSURPS[i:i+win] == 8)[0])
+            n_R_dn = len(_N.where(scores[i:i+win] == 5)[0])
+            n_R_up = len(_N.where(scores[i:i+win] == 2)[0])
+            ######################################
+            n_S      = len(_N.where(scores_rps1[i:i+win] == 1)[0])
+            n_S_st = len(_N.where(scoresDSURPS[i:i+win] == 7)[0])
+            n_S_dn = len(_N.where(scores[i:i+win] == 4)[0])
+            n_S_up = len(_N.where(scores[i:i+win] == 1)[0])
+            ######################################
+            n_P      = len(_N.where(scores_rps1[i:i+win] == 0)[0])
+            n_P_st = len(_N.where(scoresDSURPS[i:i+win] == 6)[0])
+            n_P_dn = len(_N.where(scores[i:i+win] == 3)[0])
+            n_P_up = len(_N.where(scores[i:i+win] == 0)[0])
             
             if n_win > 0:
                 #cprobs[shf, 0, i] = n_win_st / n_win
@@ -172,8 +191,37 @@ def empirical_NGS(dat, SHUF=0, win=20, flip_human_AI=False, covariates=_AIconst.
                 cprobsRPS[shf, 7, i] = cprobsRPS[shf, 7, i-1]
                 cprobsRPS[shf, 8, i] = cprobsRPS[shf, 8, i-1]
                 cprobsSTSW[shf, 4, i] = cprobsSTSW[shf, 4, i-1] 
-                cprobsSTSW[shf, 5, i] = cprobsSTSW[shf, 5, i-1] 
-    return cprobs, cprobsRPS, cprobsSTSW, all_tds, Tgame
+                cprobsSTSW[shf, 5, i] = cprobsSTSW[shf, 5, i-1]
+                ######################
+            if n_R > 0:
+                #cprobs[shf, 0, i] = n_win_st / n_win
+                cprobsDSURPS[shf, 0, i] = n_R_dn / n_R
+                cprobsDSURPS[shf, 1, i] = n_R_st / n_R
+                cprobsDSURPS[shf, 2, i] = n_R_up / n_R
+            else:
+                cprobsDSURPS[shf, 0, i] = cprobsDSURPS[shf, 0, i-1]
+                cprobsDSURPS[shf, 1, i] = cprobsDSURPS[shf, 1, i-1]
+                cprobsDSURPS[shf, 2, i] = cprobsDSURPS[shf, 2, i-1]
+            if n_S > 0:
+                #cprobs[shf, 0, i] = n_win_st / n_win
+                cprobsDSURPS[shf, 3, i] = n_S_dn / n_S
+                cprobsDSURPS[shf, 4, i] = n_S_st / n_S
+                cprobsDSURPS[shf, 5, i] = n_S_up / n_S
+            else:
+                cprobsDSURPS[shf, 3, i] = cprobsDSURPS[shf, 3, i-1]
+                cprobsDSURPS[shf, 4, i] = cprobsDSURPS[shf, 4, i-1]
+                cprobsDSURPS[shf, 5, i] = cprobsDSURPS[shf, 5, i-1]
+            if n_P > 0:
+                #cprobs[shf, 0, i] = n_win_st / n_win
+                cprobsDSURPS[shf, 6, i] = n_P_dn / n_P
+                cprobsDSURPS[shf, 7, i] = n_P_st / n_P
+                cprobsDSURPS[shf, 8, i] = n_P_up / n_P
+            else:
+                cprobsDSURPS[shf, 6, i] = cprobsDSURPS[shf, 6, i-1]
+                cprobsDSURPS[shf, 7, i] = cprobsDSURPS[shf, 7, i-1]
+                cprobsDSURPS[shf, 8, i] = cprobsDSURPS[shf, 8, i-1]
+                
+    return cprobs, cprobsRPS, cprobsDSURPS, cprobsSTSW, all_tds, Tgame
 
 #  down | win, stay | win, up | win
 #  down | tie, stay | tie, up | tie

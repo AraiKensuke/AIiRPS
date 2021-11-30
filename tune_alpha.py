@@ -39,9 +39,12 @@ lm = depickle("predictAQ28dat/AQ28_vs_RPS_1.dmp")
 AQ28scores = ["AQ28scrs", "soc_skils", "imag", "rout", "switch", "fact_pat"]
 AQ28scores_ab = ["AQ28", "SS", "IM", "RT", "SW", "FP"]
 
-features_cab = lm["features_cab"]
+features_cab1 = lm["features_cab1"]
+features_cab2 = lm["features_cab2"]
+features_AI = lm["features_AI"]
 features_stat = lm["features_stat"]
-cmp_againsts = features_cab + features_stat
+
+cmp_againsts = features_cab1 + features_cab2 + features_AI + features_stat
 
 ######  unskew and standardize the features to use.
 for ca in cmp_againsts:
@@ -65,7 +68,7 @@ print("Using %(fd)d of %(all)d participants" % {"fd" : len(filtdat), "all" : AQ2
 
 X            = _N.empty((len(filtdat), len(cmp_againsts)))
 
-target = "AQ28scrs"
+target = ""
 exec("y    = %s[filtdat]" % target)
 iaf = -1
 for af in cmp_againsts:

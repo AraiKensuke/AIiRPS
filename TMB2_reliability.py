@@ -61,7 +61,20 @@ id = 0
 lm1 = depickle("predictAQ28dat/AQ28_vs_RPS_1.dmp")
 lm2 = depickle("predictAQ28dat/AQ28_vs_RPS_2.dmp")
 
-cmp_againsts = lm1["features_cab"] + lm1["features_stat"]
+features_cab1 = lm1["features_cab1"]
+features_cab2 = lm1["features_cab2"]
+features_AI   = lm1["features_AI"]
+features_stat = lm1["features_stat"]
+
+ifeatinds_soc_skils = _N.loadtxt("use_features_soc_skils", dtype=_N.int)
+ifeatinds_imag = _N.loadtxt("use_features_imag", dtype=_N.int)
+ifeatinds_rout = _N.loadtxt("use_features_rout", dtype=_N.int)
+ifeatinds_switch = _N.loadtxt("use_features_switch", dtype=_N.int)
+ifeatinds_AQ28scrs = _N.loadtxt("use_features_AQ28scrs", dtype=_N.int)
+
+indlist = _N.sort(_N.unique(ifeatinds_soc_skils.tolist() + ifeatinds_imag.tolist() + ifeatinds_rout.tolist() + ifeatinds_switch.tolist() + ifeatinds_AQ28scrs.tolist()))
+
+cmp_againsts = features_cab1 + features_cab2 + features_AI + features_stat
 
 for ca in cmp_againsts:
     for v in range(1, 3):
@@ -73,27 +86,55 @@ for ca in cmp_againsts:
         exec("%(ca)s%(v)d = standardize(temp)" % {"ca" : ca, "v" : v})
 
 
-im = 0
-fig = _plt.figure(figsize=(13, 13))
 pcpvs = _N.empty((len(cmp_againsts), 2))
 
-for ca in cmp_againsts:
-    exec("mark_v1 = %s1" % ca)
-    exec("mark_v2 = %s2" % ca)    
-    im += 1
-    fig.add_subplot(7, 7, im)
-    _plt.scatter(mark_v1, mark_v2, color="black", s=3)
-    pc, pv = _ss.pearsonr(mark_v1, mark_v2)
-    pcpvs[im-1, 0] = pc
-    pcpvs[im-1, 1] = pv
-    marker = _N.array(mark_v1.tolist() + mark_v2.tolist())
-    minM = _N.min(marker)
-    maxM = _N.max(marker)
-    A = maxM - minM
-    _plt.plot([minM - 0.1*A, maxM + 0.1*A], [minM - 0.1*A, maxM + 0.1*A])
-    _plt.title("%.3f" % pc)
+all_im = 0
+for scalm in ["features_cab1", "features_cab2", "features_stat", "features_AI"]:
+    calm = lm1[scalm]
+    im = 0
+    all_im_cat = 0    
 
-fig.subplots_adjust(hspace=0.9)
+    for ca in calm:
+        if im % 30 == 0:
+            fig = _plt.figure(figsize=(13, 13))
+            _plt.suptitle(scalm)
+            im = 0
+        exec("mark_v1 = %s1" % ca)
+        exec("mark_v2 = %s2" % ca)    
+        im += 1
+        all_im += 1
+        all_im_cat += 1        
+        ax = fig.add_subplot(5, 6, im)
+
+        if len(_N.where(indlist == all_im-1)[0]) > 0:
+            ax.set_facecolor("#CCCCCC")
+        _plt.scatter(mark_v1, mark_v2, color="black", s=3)
+        pc, pv = _ss.pearsonr(mark_v1, mark_v2)
+        #pc, pv = _ss.spearmanr(mark_v1, mark_v2)
+        _plt.xlabel("round 1")
+        _plt.ylabel("round 2")
+
+        pcpvs[all_im-1, 0] = pc
+        pcpvs[all_im-1, 1] = pv
+        marker = _N.array(mark_v1.tolist() + mark_v2.tolist())
+        minM = _N.min(marker)
+        maxM = _N.max(marker)
+        A = maxM - minM
+        _plt.plot([minM - 0.1*A, maxM + 0.1*A], [minM - 0.1*A, maxM + 0.1*A])
+        _plt.title("%(pc).3f  %(nm)s" % {"pc" : pc, "nm" : calm[all_im_cat-1]})
+
+    fig.subplots_adjust(hspace=0.9, bottom=0.08, left=0.08, right=0.95)
+    _plt.savefig("stability_%s" % scalm)
+
+fig = _plt.figure(figsize=(7, 3))
+_plt.scatter(_N.arange(pcpvs.shape[0]), pcpvs[:, 0], color="black", s=7)
+_plt.scatter(indlist, pcpvs[indlist, 0], color="red", s=20)
+_plt.xlabel("feature index")
+_plt.ylabel("CC round 1 and 2")
+_plt.axhline(y=0, ls="--")
+_plt.ylim(-1, 1)
+fig.subplots_adjust(bottom=0.15)
+_plt.savefig("stability_summary")
 """
 fig = _plt.figure(figsize=(7, 3))
 _plt.scatter(_N.arange(len(pcs)), pcs, color="black", marker=".", s=80)
