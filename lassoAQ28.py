@@ -143,7 +143,7 @@ print("Using %(fd)d of %(all)d participants" % {"fd" : len(filtdat), "all" : AQ2
 
 X_all_feats            = _N.empty((len(filtdat), len(cmp_againsts)))
 
-starget = "imag"
+starget = "switch"
 exec("target = %s" % starget)
 
 y    = target[filtdat]

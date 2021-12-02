@@ -47,6 +47,21 @@ _SHFL_NO_KEEP_CONT  = 1
 #  entropyL
 #  isi_cv, isis_corr
 
+def amplitude_ts(probs, win, axis=2):
+    if axis == 2:
+        L = probs.shape[2]
+        amp_ts = _N.empty(L - win)
+        
+        for t in range(L-win):
+            amp_ts[t] = _N.sum(_N.std(probs[:, :, t:t+win], axis=axis))
+    else:
+        L = probs.shape[1]
+        amp_ts = _N.empty(L - win)
+        
+        for t in range(L-win):
+            amp_ts[t] = _N.sum(_N.std(probs[:, t:t+win], axis=axis))
+            
+    return amp_ts
 
 def rm_outliersCC_neighbors(x, y):
     ix = x.argsort()
@@ -273,6 +288,10 @@ coherence    = _N.empty(len(partIDs))
 ages      = _N.empty(len(partIDs))
 gens      = _N.empty(len(partIDs))
 Engs      = _N.empty(len(partIDs))
+
+amp_fluc12 =  _N.empty(len(partIDs))
+amp_fluc13 =  _N.empty(len(partIDs))
+amp_fluc23 =  _N.empty(len(partIDs))
 
 corr_UD    = _N.empty((len(partIDs), 3))
 
@@ -688,26 +707,43 @@ for partID in partIDs:
     prob_mvs_STSW = prob_mvs_STSW.reshape((3, 2, prob_mvs_STSW.shape[1]))
     #  _N.sum(prob_mvs_STSW[0], axis=0) = 1, 1, 1, 1, 1, 1, (except at ends)
     #dbehv = _crut.get_dbehv(prob_mvs, gk, equalize=True)
-    dbehv = _crut.get_dbehv(prob_mvs, gkISI, equalize=True)
+    #dbehv = _crut.get_dbehv(prob_mvs, gkISI, equalize=True)
+    #dbehv_RPS = _crut.get_dbehv(prob_mvs_RPS, gkISI, equalize=True)
+    #dbehv_DSURPS = _crut.get_dbehv(prob_mvs_DSURPS, gkISI, equalize=True)    
+    dbehv = _crut.get_dbehv(prob_mvs, None, equalize=True)
+    dbehv_RPS = _crut.get_dbehv(prob_mvs_RPS, None, equalize=True)
+    dbehv_DSURPS = _crut.get_dbehv(prob_mvs_DSURPS, None, equalize=True)    
 
+    #sSDU= amplitude_ts(prob_mvs[:, 2], 20, axis=1)
+    #sRPS= amplitude_ts(prob_mvs_RPS[:, 2], 20, axis=1)
+    #sSDURPS= amplitude_ts(prob_mvs_DSURPS, 15)    
+    amp_fluc12[pid-1], pv = _ss.pearsonr(dbehv, dbehv_RPS)
+    amp_fluc13[pid-1], pv = _ss.pearsonr(dbehv, dbehv_DSURPS)
+    amp_fluc23[pid-1], pv = _ss.pearsonr(dbehv_RPS, dbehv_DSURPS)        
+    #amp_fluc13[pid-1], pv = _ss.pearsonr(sSDU, sSDURPS)
+    #amp_fluc23[pid-1], pv = _ss.pearsonr(sRPS, sSDURPS)        
+    
     tMv = _N.diff(_hnd_dat[:, 3])
     succ = _hnd_dat[1:, 2]
+
+    #dbehv = dbehv + 0.115*dbehv_RPS# + 0.01*dbehv_DSURPS
+    dbehv = _N.convolve(dbehv + 0.115*dbehv_RPS, gkISI, mode="same")# + 0.01*dbehv_DSURPS
+    #pfrm_1st2nd[pid-1] = _N.mean(tMv[_N.where(succ == 1)]) - _N.mean(tMv[_N.where(succ == -1)])
     
-    pfrm_1st2nd[pid-1] = _N.mean(tMv[_N.where(succ == 1)]) - _N.mean(tMv[_N.where(succ == -1)])
     y0 = _N.abs(_N.diff(prob_mvs_RPS[2, 0]))
     y1 = _N.abs(_N.diff(prob_mvs_RPS[2, 1]))
     y2 = _N.abs(_N.diff(prob_mvs_RPS[2, 2]))
-    y3 = _N.abs(_N.diff(prob_mvs_RPS[1, 0]))
-    y4 = _N.abs(_N.diff(prob_mvs_RPS[1, 1]))
-    y5 = _N.abs(_N.diff(prob_mvs_RPS[1, 2]))
-    y6 = _N.abs(_N.diff(prob_mvs_RPS[0, 0]))
-    y7 = _N.abs(_N.diff(prob_mvs_RPS[0, 1]))
-    y8 = _N.abs(_N.diff(prob_mvs_RPS[0, 2]))
+    # y3 = _N.abs(_N.diff(prob_mvs_RPS[1, 0]))
+    # y4 = _N.abs(_N.diff(prob_mvs_RPS[1, 1]))
+    # y5 = _N.abs(_N.diff(prob_mvs_RPS[1, 2]))
+    # y6 = _N.abs(_N.diff(prob_mvs_RPS[0, 0]))
+    # y7 = _N.abs(_N.diff(prob_mvs_RPS[0, 1]))
+    # y8 = _N.abs(_N.diff(prob_mvs_RPS[0, 2]))
     
     y  = (y0 + y1 + y2)# + y6 + y7 + y8)
-    dy = _N.diff(y)       #  use to find maxes of time derivative
-    fdy = _N.convolve(dy, gk, mode="same")
-    dbehv += fdy
+    #dy = _N.diff(y)       #  use to find maxes of time derivative
+    #fdy = _N.convolve(dy, gk, mode="same")
+    #dbehv += fdy
 
     #fdbehv = _N.convolve(dbehv, gkISI, mode="same")
     #maxs = _N.where((dbehv[0:TO-11] >= 0) & (dbehv[1:TO-10] < 0))[0] + (win//2) #  3 from label71
@@ -1531,6 +1567,7 @@ sumsdRPS0 = sum_sd_RPS[:, 2, 0]
 sumsdRPS1 = sum_sd_RPS[:, 2, 1]
 sumsdRPS2 = sum_sd_RPS[:, 2, 2]   #  sds02  sumsdRPS0
 
+diff_sd_RPS_DSU = _N.sum(_N.sum(sum_sd_RPS - sum_sd, axis=2), axis=1)
 diff_sds1 = sum_sd[:, 2, 0] - sum_sd_RPS[:, 2, 0]
 diff_sds2 = sum_sd[:, 2, 2] - sum_sd_RPS[:, 2, 2]
 #  More sim:  If large
@@ -1548,6 +1585,7 @@ features_cab2 = ["isis", "isis_cv", "isis_corr", "isis_lv",
                 #"R_cvs", "S_cvs", "P_cvs",                
                 "sumsdRPS0", "sumsdRPS1", "sumsdRPS2",
                 "pc0010s", "pc2122s", "pc0110s", "pc0220s",
+                 "diff_sd_RPS_DSU",
                  "DSURPSpc0010s", "DSURPSpc0012s","DSURPSpc0110s",
                  "DSURPSpc0221s", "DSURPSpc1011s",
                  "diff_sds1", "diff_sds2",

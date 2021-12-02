@@ -22,7 +22,7 @@ def depickle(s):
 wins= 4
 gk_w = 3
 
-visit = 1
+visit = 2
 
 #  These are ParticipantIDs.
 

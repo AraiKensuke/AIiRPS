@@ -18,13 +18,20 @@ def empirical_NGS(dat, SHUF=0, win=20, flip_human_AI=False, covariates=_AIconst.
     if _td is None:
         return None, None
     Tgame= _td.shape[0]
+    ############  Several different dynamic conditional probabilities
+    ############  We don't know what players look at, and how they think
+    ############  about next move?  Do they think in terms of RPS, or
+    ############  do they think in terms of upgrades, downgrades or stays?
+    ############  Using a model that more closely matches the way they think
+    ############  will probably better capture their behavior
     cprobs     = _N.zeros((SHUF+1, 9, Tgame-win))    # UDS | WTL
     cprobsRPS     = _N.zeros((SHUF+1, 9, Tgame-win)) # RPS | WTL
     cprobsDSURPS     = _N.zeros((SHUF+1, 9, Tgame-win)) # UDS | RPS
-    cprobsSTSW = _N.zeros((SHUF+1, 6, Tgame-win))    
+    cprobsSTSW = _N.zeros((SHUF+1, 6, Tgame-win))    #  Stay,Switch | WTL
 
+    ############  Raw move game-by-game data
     all_tds = _N.empty((SHUF+1, _td.shape[0], _td.shape[1]), dtype=_N.int)
-    for shf in range(SHUF+1):
+    for shf in range(SHUF+1):    ###########  allow randomly shuffling the data
         if shf > 0:
             inds = _N.arange(_td.shape[0])
             _N.random.shuffle(inds)

@@ -22,6 +22,8 @@ else:
     if sys.argv[1] == "TMB1_o":
         old_TMB1 = True
 
+#######################################
+#######################################  where TMB1 and TMB2 directories are
 zipped_dir = "/Users/arai/Sites/taisen/DATA/%s" % expt
 
 #dates      = ["20210723"]

@@ -89,7 +89,7 @@ for ca in cmp_againsts:
 pcpvs = _N.empty((len(cmp_againsts), 2))
 
 all_im = 0
-for scalm in ["features_cab1", "features_cab2", "features_stat", "features_AI"]:
+for scalm in ["features_cab1", "features_cab2", "features_AI", "features_stat", ]:
     calm = lm1[scalm]
     im = 0
     all_im_cat = 0    
@@ -131,6 +131,9 @@ _plt.scatter(_N.arange(pcpvs.shape[0]), pcpvs[:, 0], color="black", s=7)
 _plt.scatter(indlist, pcpvs[indlist, 0], color="red", s=20)
 _plt.xlabel("feature index")
 _plt.ylabel("CC round 1 and 2")
+_plt.axvline(x=(len(features_cab1)-0.5))
+_plt.axvline(x=(len(features_cab1+features_cab2)-0.5))
+_plt.axvline(x=(len(features_cab1+features_cab2+features_AI)-0.5))
 _plt.axhline(y=0, ls="--")
 _plt.ylim(-1, 1)
 fig.subplots_adjust(bottom=0.15)
