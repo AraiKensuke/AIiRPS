@@ -8,7 +8,7 @@ import scipy.io as _scio
 import scipy.stats as _ss
 import matplotlib.pyplot as _plt
 import AIiRPS.utils.read_taisen as _rd
-from filter import gauKer
+import AIiRPS.utils.misc as _Am
 from scipy.signal import savgol_filter
 from GCoh.eeg_util import unique_in_order_of_appearance, increasing_labels_mapping, rmpd_lab_trnsfrm, find_or_retrieve_GMM_labels, shift_correlated_shuffle, shuffle_discrete_contiguous_regions, mtfftc
 import AIiRPS.skull_plot as _sp
@@ -17,7 +17,6 @@ import sys
 from sumojam.devscripts.cmdlineargs import process_keyval_args
 import pickle
 import mne.time_frequency as mtf
-from filter import gauKer
 import GCoh.eeg_util as _eu
 import AIiRPS.rpsms as rpsms
 import GCoh.preprocess_ver as _ppv
@@ -254,7 +253,7 @@ trigger_temp = _N.empty(t1-t0)
 cut = 1
 all_avgs = _N.empty((len(partIDs), SHUFFLES+1, t1-t0))
 netwins  = _N.empty(len(partIDs), dtype=_N.int)
-gk = gauKer(1)
+gk = _Am.gauKer(1)
 gk /= _N.sum(gk)
 #gk = None
 
@@ -535,7 +534,7 @@ istrtend     = 0
 strtend      = _N.zeros(len(partIDs)+1, dtype=_N.int)
 
 incomplete_data = []
-gkISI = gauKer(1)
+gkISI = _Am.gauKer(1)
 gkISI /= _N.sum(gkISI)
 
 RPS_ratios = _N.empty((len(partIDs), 3))
@@ -751,8 +750,8 @@ for partID in partIDs:
 
     preds = all_AI_preds[pid-1]
     
-    PCS=5    
-    prob_Mimic            = _N.empty((2, prob_mvs.shape[2]))
+    PCS=5
+    prob_Mimic            = _N.empty((3, prob_mvs.shape[2]))
     #sd_M[pid-1]               = _N.std(prob_mvs[0, 0] + prob_mvs[1, 1] + prob_mvs[2, 2])
     sd_M[pid-1]               = _N.std(prob_mvs[0, 0] + prob_mvs[2, 2])
     t00 = 5
@@ -784,14 +783,14 @@ for partID in partIDs:
     #sd_BT[pid-1]               = _N.std(ctprob_mvs[1, 2])# / (_N.abs(mn - 0.5)+0.1)
     #sd_BL[pid-1]               = _N.std(ctprob_mvs[2, 0] + ctprob_mvs[2, 2])# / (_N.abs(mn - 0.5)+0.1)        
     prob_Mimic[0]      = prob_mvs[0, 0]   #  DN | WIN
-    #prob_Mimic[1]      = prob_mvs[1, 1]   #  ST | TIE
-    prob_Mimic[1]      = prob_mvs[2, 2]   #  UP | LOS
+    prob_Mimic[1]      = prob_mvs[1, 1]   #  ST | TIE
+    prob_Mimic[2]      = prob_mvs[2, 2]   #  UP | LOS
     prob_Beat            = _N.empty((3, prob_mvs.shape[2]))
     prob_Beat[0]       = prob_mvs[0, 1]
     prob_Beat[1]       = prob_mvs[1, 2]
     prob_Beat[2]       = prob_mvs[2, 0]
     entropyB[pid-1] = entropy3(prob_Beat.T, PCS)    
-    entropyM[pid-1] = entropy2(prob_Mimic.T, PCS)
+    entropyM[pid-1] = entropy3(prob_Mimic.T, PCS)
     
     #l_maxs = maxs.tolist()
     #if l_maxs[-1] == _hnd_dat.shape[0] - t1:
@@ -939,9 +938,9 @@ for partID in partIDs:
     entropyS[pid-1] = entsDSU[1]
     entropyU[pid-1] = entsDSU[2]
 
-    entropyRPS1[pid-1] = entropy3(prob_mvs_RPS[0].T, PCS)
-    entropyRPS2[pid-1] = entropy3(prob_mvs_RPS[1].T, PCS)
-    entropyRPS3[pid-1] = entropy3(prob_mvs_RPS[2].T, PCS)
+    entropyRPS1[pid-1] = entropy3(prob_mvs_RPS[:, 0].T, PCS)
+    entropyRPS2[pid-1] = entropy3(prob_mvs_RPS[:, 1].T, PCS)
+    entropyRPS3[pid-1] = entropy3(prob_mvs_RPS[:, 2].T, PCS)
     #  _ss.pearsonr(entropyRPS3[ths], rout[ths]) <--  
     #entropyUD2[pid-1] = entsUD_S[0]
     entropyS2[pid-1]  = entsUD_S[1]    
@@ -1529,7 +1528,8 @@ AIent2  = _N.empty(len(partIDs))
 ###  Does it look like we are well-defined by CR?
 
 for pid in range(len(partIDs)):
-    AIent1[pid] = entropy3(stg3[pid], 5)
+    AIent1[pid] = entropy3(stg2[pid], 5)
+    AIent2[pid] = entropy3(stg3[pid], 5)    
 
 srtds = _N.sort(all_AI_preds, axis=2)
 
@@ -1550,7 +1550,13 @@ USDdiff4 = _N.std(marginalCRs, axis=1)[:, 1]   #  how different are USD in LOSE 
 USDdiff5 = _N.std(marginalCRs, axis=1)[:, 2]   #  how different are USD in LOSE condition
 
 
-    
+
+entropyWL    = entropyW + entropyL
+entropyRPS123  = entropyRPS1 - (entropyRPS2 + entropyRPS3)
+entropyRPS312  = entropyRPS3 - (entropyRPS1 + entropyRPS2)
+sds20_m_sds22  = sds20 - sds22
+sds01_m_sds11  = sds01 - 0.2*sds11
+sds01_m_sds12  = sds01 - sds12
 #for pid in range(len(partIDs)):
 #    AIent2[pid] = entropy3(stg2[pid], 8)
 
@@ -1574,7 +1580,8 @@ diff_sds2 = sum_sd[:, 2, 2] - sum_sd_RPS[:, 2, 2]
 features_cab2 = ["isis", "isis_cv", "isis_corr", "isis_lv",
                 "entropyD", "entropyS", "entropyU",
                 #"entropyT2", "entropyW2", "entropyL2",
-                "entropyT", "entropyW", "entropyL", #"entropyM", "entropyB",
+                 "entropyT", "entropyW", "entropyL", "entropyWL",
+                 "entropyRPS123", "entropyRPS312", 
                 #"mn00", "mn01", "mn02",
                 #"mn10", "mn11", "mn12",
                 #"mn20", "mn21", "mn22",                
@@ -1592,9 +1599,10 @@ features_cab2 = ["isis", "isis_cv", "isis_corr", "isis_lv",
                 "cntrmvs", "sd_diff_top2"]
 features_cab1 = ["sds00", "sds01", "sds02",
                  "sds10", "sds11", "sds12",
-                 "sds20", "sds21", "sds22"]
+                 "sds20", "sds21", "sds22"]#, "sds20_m_sds22", "sds01_m_sds11"]
+                 #"sds01_m_sds12"]
 
-features_AI  = ["AIfts0", "AIfts1", "AIfts2", "AIfts3", "AIfts4", "AIfts5", "AIfts6", "AIfts7", "AIfts8", "AIent1"]
+features_AI  = ["AIfts0", "AIfts1", "AIfts2", "AIfts3", "AIfts4", "AIfts5", "AIfts6", "AIfts7", "AIfts8", "AIent1", "AIent2"]
                 # "pc0001s", "pc0002s", "pc0010s", "pc0011s", "pc0012s", "pc0020s", "pc0021s", "pc0022s",
                 # "pc0102s", "pc0110s", "pc0111s", "pc0112s", "pc0120s", "pc0121s", "pc0122s",
                 # "pc0210s", "pc0211s", "pc0212s", "pc0220s", "pc0221s", "pc0222s",

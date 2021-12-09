@@ -16,6 +16,8 @@ from sklearn.linear_model import Lasso
 from sklearn.linear_model import LassoCV
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 import sklearn.preprocessing as _skp
+import pickle
+import cv_funcs as cvf
 
 #------------------ SOCIAL SKILLS     [0, 1, 2, 3, 4, 5, 6]
 #0   1C  "I prefer to do things with others rather than on my own.",
@@ -143,7 +145,7 @@ print("Using %(fd)d of %(all)d participants" % {"fd" : len(filtdat), "all" : AQ2
 
 X_all_feats            = _N.empty((len(filtdat), len(cmp_againsts)))
 
-starget = "switch"
+starget = "AQ28scrs"
 exec("target = %s" % starget)
 
 y    = target[filtdat]
@@ -154,35 +156,36 @@ for af in cmp_againsts:
     exec("feat = %s_s" % af)
     X_all_feats[:, iaf] = feat[filtdat]
 
-REPS = 20
-scrs = _N.empty(REPS*4)
-coeffs= _N.empty((REPS*4, len(cmp_againsts)))
+# REPS = 20
+# scrs = _N.empty(REPS*4)
 
-n_splits = 5
-datinds = _N.arange(len(filtdat))
-rkf = RepeatedKFold(n_splits=n_splits, n_repeats=REPS)#, random_state=0)
-iii = -1
+outer_flds = 5
+inner_flds = 3
+outer_REPS = 20
+inner_REPS = 3
 
-these = {} 
-ichosen = _N.zeros(len(cmp_againsts), dtype=_N.int)
-reg_coefs = _N.empty((n_splits*REPS, len(cmp_againsts)))
-for train, test in rkf.split(datinds):
-    iii += 1
-    ####  first, pick alpha using LassoCV
-    reg = LassoCV(cv=4, max_iter=100000).fit(X_all_feats[train], y[train])
+# rkf = RepeatedKFold(n_splits=outer_flds, n_repeats=REPS)#, random_state=0)
+# rkfINNER = RepeatedKFold(n_splits=inner_flds, n_repeats=4)#, random_state=0)
 
-    maxWeight = _N.max(_N.abs(reg.coef_))
-    reg_coefs[iii] = reg.coef_
-    chosen = _N.where(_N.abs(reg.coef_) > maxWeight*0.05)[0]
-    print(reg.alpha_)
-    #print(_N.array(cmp_againsts)[chosen])
-    for ic in range(len(chosen)):
-        try:
-            these[cmp_againsts[chosen[ic]]] += 1
-        except KeyError:
-            these[cmp_againsts[chosen[ic]]] = 1
-        ichosen[chosen[ic]] += 1
+# iii = -1
 
+# ichosen = _N.zeros(len(cmp_againsts), dtype=_N.int)
+# reg_coefs = _N.empty((outer_flds*REPS, len(cmp_againsts)))
+# for train, test in rkf.split(datinds):
+#     iii += 1
+#     ####  first, pick alpha using LassoCV
+#     train_data_inds = _N.arange(len(train))
+#     splits = rkfINNER.split(train_data_inds)
+#     reg = LassoCV(cv=splits, max_iter=100000).fit(X_all_feats[train], y[train])
+    
+#     #reg = LassoCV(cv=4, max_iter=100000).fit(X_all_feats[train], y[train])
+
+#     maxWeight = _N.max(_N.abs(reg.coef_))
+#     reg_coefs[iii] = reg.coef_
+
+
+feat_inv_cv, inner_scores, pcpvs = cvf.pickFeaturesTwoCVs(X_all_feats, y, outer_flds=outer_flds, inner_flds=inner_flds, outer_REPS=outer_REPS, innter_REPS=inner_REPS)
+    
 ##  WHICH FEATURES TO USE
 fig = _plt.figure(figsize=(8, 11))
 _plt.suptitle("target = %s" % starget)
@@ -191,19 +194,18 @@ arr_cmp_againsts = _N.array(cmp_againsts)
 for cv_thresh in [1.4, 1.2, 1]:
     ict += 1
     fig.add_subplot(4, 1, ict)
-    ths_feats = _N.where(_N.std(reg_coefs, axis=0) / _N.abs(_N.mean(reg_coefs, axis=0)) < cv_thresh)[0]
-    n_ths_feats = _N.where(_N.std(reg_coefs, axis=0) / _N.abs(_N.mean(reg_coefs, axis=0)) >= cv_thresh)[0]
+    ths_feats = _N.where(feat_inv_cv > cv_thresh)[0]
+    n_ths_feats = _N.where(feat_inv_cv <= cv_thresh)[0]
     all_inds = _N.arange(len(cmp_againsts))
-    all_ys   = _N.abs(_N.mean(reg_coefs, axis=0)) / _N.std(reg_coefs, axis=0)
-    _plt.scatter(all_inds[n_ths_feats], all_ys[n_ths_feats], color="grey", s=3)
-    _plt.scatter(all_inds[ths_feats], all_ys[ths_feats], color="black", s=13)
+    _plt.scatter(all_inds[n_ths_feats], feat_inv_cv[n_ths_feats], color="grey", s=3)
+    _plt.scatter(all_inds[ths_feats], feat_inv_cv[ths_feats], color="black", s=13)
     _plt.xticks(all_inds[ths_feats], arr_cmp_againsts[ths_feats], rotation=70)
 fig.subplots_adjust(hspace=1.1, left=0.05, right=0.98, top=0.94)
 _plt.savefig("LASSO_features_4_%s" % starget)
 
-ichosen140 = _N.where(_N.std(reg_coefs, axis=0) / _N.abs(_N.mean(reg_coefs, axis=0) ) < 1.4)[0]        
-ichosen120 = _N.where(_N.std(reg_coefs, axis=0) / _N.abs(_N.mean(reg_coefs, axis=0) ) < 1.2)[0]
-ichosen1 = _N.where(_N.std(reg_coefs, axis=0) / _N.abs(_N.mean(reg_coefs, axis=0) ) < 1)[0]
+ichosen140 = _N.where(feat_inv_cv > 1.4)[0]        
+ichosen120 = _N.where(feat_inv_cv > 1.2)[0]        
+ichosen1 = _N.where(feat_inv_cv > 1.)[0]        
 
 #  rout
 """
@@ -224,14 +226,16 @@ chosen_features140 = _N.array(cmp_againsts)[ichosen140]
 chosen_features120 = _N.array(cmp_againsts)[ichosen120]
 chosen_features1 = _N.array(cmp_againsts)[ichosen1]
 clf = _skl.LinearRegression()
-#clf = _skl.TheilSenRegressor()
-nrep = 50
+nrep = 80
 
 fig = _plt.figure(figsize=(9, 3))
 iu  = 0
 
 scores_thresh = []   #  each thresh, 3 different folds
 _plt.suptitle("target=\"%s\"  (grey=LinearRegr, black=RidgeRegr)" % starget)
+
+datinds = _N.arange(len(filtdat))
+use_features_dmp = {}
 for use_features in [ichosen1, ichosen120, ichosen140]:
     iu += 1
     scores_folds = []
@@ -262,10 +266,13 @@ for use_features in [ichosen1, ichosen120, ichosen140]:
                 iii += 1
                 clf_f = clf.fit(Xs_train[train], y[train])
                 scoresLR[iii] = clf_f.score(Xs_train[test], y[test])
-                #coefsLR[iii] = clf_f.coef_
+                coefsLR[iii] = clf_f.coef_
                 obs_v_preds[iii, 0:len(test), 0] = y[test]
                 obs_v_preds[iii, 0:len(test), 1] = clf_f.predict(Xs_train[test])
 
+            use_features_dmp["weights_thresh%(t)d_fld%(f)d" % {"t" : iu, "f" : ns}] = _N.mean(coefsLR, axis=0)
+            use_features_dmp["features_thresh%(t)d_fld%(f)d" % {"t" : iu, "f" : ns}] = use_features
+            
             # scoresLR  = cross_val_score(clf, Xs_train, y, cv=rkf)
 
             scores_folds.append([scoresLR, coefsLR, obs_v_preds])
@@ -289,7 +296,9 @@ for use_features in [ichosen1, ichosen120, ichosen140]:
     scores_thresh.append(scores_folds)
 fig.subplots_adjust(hspace=0.4, wspace=0.4)
 _plt.savefig("scores_%s" % starget)
-_N.savetxt("use_features_%s" % starget, use_features, fmt="%d")
+dmp = open("LRfit%s.dmp" % starget, "wb")
+pickle.dump(use_features_dmp, dmp, -1)
+dmp.close()
 
 
 fi = -1
@@ -359,3 +368,6 @@ for use_features in [ichosen1, ichosen120, ichosen140]:
                 _plt.ylabel("predicted score", fontsize=lbsz)
         fig.subplots_adjust(hspace=0.62, wspace=0.55, bottom=0.07, left=0.07, right=0.99)                
         _plt.savefig("predict_%(t)s_%(th)s.png" % {"t" : starget, "th" : chosen_s[fi]})
+
+
+

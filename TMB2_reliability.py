@@ -89,6 +89,8 @@ for ca in cmp_againsts:
 pcpvs = _N.empty((len(cmp_againsts), 2))
 
 all_im = 0
+
+all_features = _N.empty((len(cmp_againsts), len(lm1["AQ28scrs"]), 2))
 for scalm in ["features_cab1", "features_cab2", "features_AI", "features_stat", ]:
     calm = lm1[scalm]
     im = 0
@@ -100,44 +102,46 @@ for scalm in ["features_cab1", "features_cab2", "features_AI", "features_stat", 
             _plt.suptitle(scalm)
             im = 0
         exec("mark_v1 = %s1" % ca)
-        exec("mark_v2 = %s2" % ca)    
+        exec("mark_v2 = %s2" % ca)
+        all_features[all_im, :, 0] = mark_v1
+        all_features[all_im, :, 1] = mark_v2
         im += 1
         all_im += 1
         all_im_cat += 1        
-        ax = fig.add_subplot(5, 6, im)
+#         ax = fig.add_subplot(5, 6, im)
 
-        if len(_N.where(indlist == all_im-1)[0]) > 0:
-            ax.set_facecolor("#CCCCCC")
-        _plt.scatter(mark_v1, mark_v2, color="black", s=3)
-        pc, pv = _ss.pearsonr(mark_v1, mark_v2)
-        #pc, pv = _ss.spearmanr(mark_v1, mark_v2)
-        _plt.xlabel("round 1")
-        _plt.ylabel("round 2")
+#         if len(_N.where(indlist == all_im-1)[0]) > 0:
+#             ax.set_facecolor("#CCCCCC")
+#         _plt.scatter(mark_v1, mark_v2, color="black", s=3)
+#         pc, pv = _ss.pearsonr(mark_v1, mark_v2)
+#         #pc, pv = _ss.spearmanr(mark_v1, mark_v2)
+#         _plt.xlabel("round 1")
+#         _plt.ylabel("round 2")
 
-        pcpvs[all_im-1, 0] = pc
-        pcpvs[all_im-1, 1] = pv
-        marker = _N.array(mark_v1.tolist() + mark_v2.tolist())
-        minM = _N.min(marker)
-        maxM = _N.max(marker)
-        A = maxM - minM
-        _plt.plot([minM - 0.1*A, maxM + 0.1*A], [minM - 0.1*A, maxM + 0.1*A])
-        _plt.title("%(pc).3f  %(nm)s" % {"pc" : pc, "nm" : calm[all_im_cat-1]})
+#         pcpvs[all_im-1, 0] = pc
+#         pcpvs[all_im-1, 1] = pv
+#         marker = _N.array(mark_v1.tolist() + mark_v2.tolist())
+#         minM = _N.min(marker)
+#         maxM = _N.max(marker)
+#         A = maxM - minM
+#         _plt.plot([minM - 0.1*A, maxM + 0.1*A], [minM - 0.1*A, maxM + 0.1*A])
+#         _plt.title("%(pc).3f  %(nm)s" % {"pc" : pc, "nm" : calm[all_im_cat-1]})
 
-    fig.subplots_adjust(hspace=0.9, bottom=0.08, left=0.08, right=0.95)
-    _plt.savefig("stability_%s" % scalm)
+#     fig.subplots_adjust(hspace=0.9, bottom=0.08, left=0.08, right=0.95)
+#     _plt.savefig("stability_%s" % scalm)
 
-fig = _plt.figure(figsize=(7, 3))
-_plt.scatter(_N.arange(pcpvs.shape[0]), pcpvs[:, 0], color="black", s=7)
-_plt.scatter(indlist, pcpvs[indlist, 0], color="red", s=20)
-_plt.xlabel("feature index")
-_plt.ylabel("CC round 1 and 2")
-_plt.axvline(x=(len(features_cab1)-0.5))
-_plt.axvline(x=(len(features_cab1+features_cab2)-0.5))
-_plt.axvline(x=(len(features_cab1+features_cab2+features_AI)-0.5))
-_plt.axhline(y=0, ls="--")
-_plt.ylim(-1, 1)
-fig.subplots_adjust(bottom=0.15)
-_plt.savefig("stability_summary")
+# fig = _plt.figure(figsize=(7, 3))
+# _plt.scatter(_N.arange(pcpvs.shape[0]), pcpvs[:, 0], color="black", s=7)
+# _plt.scatter(indlist, pcpvs[indlist, 0], color="red", s=20)
+# _plt.xlabel("feature index")
+# _plt.ylabel("CC round 1 and 2")
+# _plt.axvline(x=(len(features_cab1)-0.5))
+# _plt.axvline(x=(len(features_cab1+features_cab2)-0.5))
+# _plt.axvline(x=(len(features_cab1+features_cab2+features_AI)-0.5))
+# _plt.axhline(y=0, ls="--")
+# _plt.ylim(-1, 1)
+# fig.subplots_adjust(bottom=0.15)
+# _plt.savefig("stability_summary")
 """
 fig = _plt.figure(figsize=(7, 3))
 _plt.scatter(_N.arange(len(pcs)), pcs, color="black", marker=".", s=80)
@@ -172,3 +176,65 @@ _plt.savefig("retest", transparent=True)
 # for i in range(len(partIDs)):
 #     _plt.plot([i, i], [los_aft_tie[i, 0], los_aft_tie[i, 1]], marker=".", ms=10)
     
+# SHUFFS = 500
+# sign_shuf=20
+# pm_one   = _N.array([-1, 1])
+# pcpvs_all = _N.empty((SHUFFS, 2))
+# pick = 2
+# for i in range(SHUFFS):
+#     rand_inds = _N.random.choice(_N.arange(80), pick, replace=False)
+#     pcs = _N.empty((sign_shuf, 2))
+
+#     for ss in range(sign_shuf):
+#         wgts = _N.random.choice(pm_one, pick)
+#         wgtsr = wgts.reshape((pick, 1, 1))
+#         v = _N.sum(all_features[rand_inds]*wgtsr, axis=0)
+#         pc, pv = _ss.pearsonr(v[:, 0], v[:, 1])
+#         pcs[ss, 0] = pc
+#         pcs[ss, 1] = pv
+#     args = pcs[:, 0].argsort()
+#     pc = pcs[args[-1], 0]
+#     pv = pcs[args[-1], 1]    
+#     print("%(pc).2f  %(pv).1e" % {"pc" : pc, "pv" : pv})
+#     pcpvs_all[i, 0] = pc
+#     pcpvs_all[i, 1] = pv    
+
+
+# SHUFFS = 500
+# pcpvs_all = _N.empty((SHUFFS, 2))
+# for ish in range(SHUFFS):
+#     rand_inds = _N.random.choice(_N.arange(80), pick, replace=False)
+#     pc0, pv0 = _ss.pearsonr(all_features[rand_inds[0], :, 0], all_features[rand_inds[1], :, 0])
+#     pc1, pv1 = _ss.pearsonr(all_features[rand_inds[0], :, 1], all_features[rand_inds[1], :, 1])
+#     pcpvs_all[ish, 0] = pc0
+#     pcpvs_all[ish, 1] = pc1
+
+# soc_skils
+# imag
+# rout
+# switch
+# AQ28scrs
+
+fig = _plt.figure(figsize=(4, 10))
+ti = 0
+for tar in ["soc_skils", "imag", "rout", "switch", "AQ28scrs"]:
+    ti += 1
+    ax = fig.add_subplot(5, 1, ti)
+    ax.set_aspect("equal")
+    
+    lm = depickle("LRfit%s.dmp" % tar)
+    ifeats = lm["features_thresh3_fld4"]
+    iwgts  = lm["weights_thresh3_fld4"]
+    
+    wgtsr = iwgts.reshape((len(iwgts), 1, 1))
+    v = _N.sum(all_features[ifeats]*wgtsr, axis=0)
+    xymin = _N.min(v)
+    xymax = _N.max(v)
+    amp   = xymax - xymin
+    _plt.xlim(xymin-0.1*amp, xymax+0.1*amp)
+    _plt.ylim(xymin-0.1*amp, xymax+0.1*amp)
+    _plt.plot([xymin, xymax], [xymin, xymax])
+    pc, pv = _ss.pearsonr(v[:, 0], v[:, 1])
+
+    _plt.title(pc)
+    _plt.scatter(v[:, 0], v[:, 1])

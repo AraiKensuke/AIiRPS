@@ -1,5 +1,5 @@
 import AIiRPS.models.empirical_ken as empirical
-from filter import gauKer
+import AIiRPS.utils.misc as _Am
 import numpy as _N
 import matplotlib.pyplot as _plt
 import GCoh.eeg_util as _eu
@@ -11,13 +11,6 @@ import AIiRPS.constants as _AIconst
 import scipy.stats as _ss
 import glob
 import AIiRPS.simulation.simulate_prcptrn as sim_prc
-
-
-def depickle(s):
-     import pickle
-     with open(s, "rb") as f:
-          lm = pickle.load(f)
-     return lm
 
 wins= 4
 gk_w = 3
@@ -56,7 +49,7 @@ for datetm in datetms:
         acs = _N.zeros((len(datetms), SHUFFLES+1, 61))
 
         if gk_w > 0:
-            gk = gauKer(gk_w)
+            gk = _Am.gauKer(gk_w)
             gk /= _N.sum(gk)
         sFlip = "_flip" if flip_human_AI else ""
 

@@ -7,6 +7,7 @@ from sklearn.linear_model import Lasso
 from sklearn.model_selection import KFold
 from sklearn.model_selection import GridSearchCV
 import numpy as _N
+from sklearn.model_selection import RepeatedKFold
 
 import scipy.stats as _ss
 from sklearn import linear_model
@@ -68,8 +69,9 @@ print("Using %(fd)d of %(all)d participants" % {"fd" : len(filtdat), "all" : AQ2
 
 X            = _N.empty((len(filtdat), len(cmp_againsts)))
 
-target = ""
+target = "switch"
 exec("y    = %s[filtdat]" % target)
+#_N.random.shuffle(y)
 iaf = -1
 for af in cmp_againsts:
     iaf += 1
@@ -84,7 +86,11 @@ alphas = np.logspace(-2, 1, 100)
 tuned_parameters = [{"alpha": alphas}]
 n_folds = 5
 
-clf = GridSearchCV(lasso, tuned_parameters, cv=n_folds, refit=False)
+train_data_inds = _N.arange(len(filtdat))
+rkfINNER = RepeatedKFold(n_splits=n_folds,   n_repeats=10)#, random_state=0)
+splits = rkfINNER.split(train_data_inds)
+clf = GridSearchCV(lasso, tuned_parameters, cv=splits, refit=True)
+#clf = GridSearchCV(lasso, tuned_parameters, cv=5, refit=False)
 clf.fit(X, y)
 scores = clf.cv_results_["mean_test_score"]
 scores_std = clf.cv_results_["std_test_score"]
