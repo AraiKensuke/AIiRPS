@@ -64,7 +64,7 @@ def return_hnd_dat(day_time, tr0=0, tr1=None, know_gt=False, flip_human_AI=False
 
     if rpsm_fn is None:
         print("returning None      %d" % block)
-        return None, None, None, None, None
+        return None, None, None, None, None, None, None, None
 
     #print("----")
     #print('%(bd)s/%(day)s/%(partID)s/%(rpsmfn)s' % {"day" : day, "partID" : day_time, "bd" : baseDir, "rpsmfn" : rpsm_fn})
