@@ -13,7 +13,139 @@ dn_los = 6
 st_los = 7
 up_los = 8
 
-def empirical_NGS(dat, SHUF=0, win=20, flip_human_AI=False, covariates=_AIconst._WTL, expt="EEG1", visit=None):
+def empirical_NGS_concat_conds(dat, SHUF=0, win=20, flip_human_AI=False, expt="EEG1", visit=None):
+    """
+    concatenate given
+    1  2  3  4  5  6  7  8  9  10 11 12
+    DW UT ST UL DW DL UT SW ST UT UW SL
+
+    concat:
+    4 Wins at a time
+    1  5  8  11
+    DW DW SW UW
+    now p(D|W)
+
+    previous method:
+    4 moves at a time
+    DW UT ST UL
+    """
+    _td, start_tm, end_tm, UA, cnstr, inp_meth, ini_percep, fin_percep = _rt.return_hnd_dat(dat, has_useragent=True, has_start_and_end_times=True, has_constructor=True, flip_human_AI=flip_human_AI, expt=expt, visit=visit)
+    cWin = win
+    if _td is None:
+        return None, None
+    Tgame= _td.shape[0]
+    ############  Several different dynamic conditional probabilities
+    ############  We don't know what players look at, and how they think
+    ############  about next move?  Do they think in terms of RPS, or
+    ############  do they think in terms of upgrades, downgrades or stays?
+    ############  Using a model that more closely matches the way they think
+    ############  will probably better capture their behavior
+    cprobsDSU_WTL     = _N.ones((SHUF+1, 9, Tgame-win))*-1    # UDS | WTL
+    cprobsRPS_WTL     = _N.ones((SHUF+1, 9, Tgame-win))*-1 # RPS | WTL
+    cprobsDSU_RPS     = _N.ones((SHUF+1, 9, Tgame-win))*-1 # UDS | RPS
+    cprobsSTSW        = _N.ones((SHUF+1, 6, Tgame-win))*-1    #  Stay,Switch | WTL
+    pConds            = [cprobsDSU_WTL, cprobsRPS_WTL, cprobsDSU_RPS, cprobsSTSW]
+
+    ############  Raw move game-by-game data
+    all_tds = _N.empty((SHUF+1, _td.shape[0], _td.shape[1]), dtype=_N.int)
+    for shf in range(SHUF+1):    ###########  allow randomly shuffling the data
+        if shf > 0:
+            inds = _N.arange(_td.shape[0])
+            _N.random.shuffle(inds)
+            td = _N.array(_td[inds])
+        else:
+            td = _td
+        all_tds[shf] = td
+
+        ################################# wtl 1 steps back
+        wins_m1 = _N.where(td[0:Tgame-1, 2] == 1)[0]
+        ties_m1 = _N.where(td[0:Tgame-1, 2] == 0)[0]
+        loss_m1 = _N.where(td[0:Tgame-1, 2] == -1)[0]
+        ################################# rps 1 steps back
+        R_m1 = _N.where(td[0:Tgame-1, 0] == 1)[0]
+        S_m1 = _N.where(td[0:Tgame-1, 0] == 2)[0]
+        P_m1 = _N.where(td[0:Tgame-1, 0] == 3)[0]
+
+        icndT = -1
+        for conds in [[wins_m1, ties_m1, loss_m1], [wins_m1, ties_m1, loss_m1], [R_m1, S_m1, P_m1], [wins_m1, ties_m1, loss_m1]]:
+            icndT += 1
+            pCond = pConds[icndT]
+            icnd = -1
+            for cond_m1 in conds:
+                icnd += 1
+                if (icndT == 0) or (icndT == 2):  #  DSU | WTL or DSU | RPS
+                    for ig in range(len(cond_m1) - cWin):
+                        tMid = (cond_m1[ig] + cond_m1[ig+cWin-1])//2
+                        #  stays
+                        n_stays = len(_N.where(td[cond_m1[ig:ig+cWin], 0] == td[cond_m1[ig:ig+cWin]+1, 0])[0])
+                                #####UPGRAD        
+                        n_dngrd = len(_N.where(((td[cond_m1[ig:ig+cWin], 0] == 1) & (td[cond_m1[ig:ig+cWin]+1, 0] == 2)) |
+                                               ((td[cond_m1[ig:ig+cWin], 0] == 2) & (td[cond_m1[ig:ig+cWin]+1, 0] == 3)) |
+                                               ((td[cond_m1[ig:ig+cWin], 0] == 3) & (td[cond_m1[ig:ig+cWin]+1, 0] == 1)))[0])
+                        n_upgrd = len(_N.where(((td[cond_m1[ig:ig+cWin], 0] == 1) & (td[cond_m1[ig:ig+cWin]+1, 0] == 3)) |
+                                               ((td[cond_m1[ig:ig+cWin], 0] == 2) & (td[cond_m1[ig:ig+cWin]+1, 0] == 1)) |
+                                               ((td[cond_m1[ig:ig+cWin], 0] == 3) & (td[cond_m1[ig:ig+cWin]+1, 0] == 2)))[0])
+                        #  DN | cond
+                        ##  This probability is at t in middle of window
+                        pCond[shf, icnd*3, tMid]      = n_dngrd / cWin
+                        pCond[shf, icnd*3+1, tMid]  = n_stays / cWin
+                        pCond[shf, icnd*3+2, tMid]  = n_upgrd / cWin
+                elif icndT == 1:  #  RSP | WTL
+                    for ig in range(len(cond_m1) - cWin):
+                        tMid = (cond_m1[ig] + cond_m1[ig+cWin-1])//2
+                        #####R        
+                        n_R = len(_N.where((td[cond_m1[ig:ig+cWin]+1, 0] == 1))[0])
+                        n_S = len(_N.where((td[cond_m1[ig:ig+cWin]+1, 0] == 2))[0])
+                        n_P = len(_N.where((td[cond_m1[ig:ig+cWin]+1, 0] == 3))[0])
+                        pCond[shf, icnd*3, tMid]      = n_R / cWin
+                        pCond[shf, icnd*3+1, tMid]  = n_S / cWin
+                        pCond[shf, icnd*3+2, tMid]  = n_P / cWin
+                elif (icndT == 3):  #  ST,SW | WTL
+                    for ig in range(len(cond_m1) - cWin):
+                        tMid = (cond_m1[ig] + cond_m1[ig+cWin-1])//2
+                        #  stays
+                        n_stays     = len(_N.where(td[cond_m1[ig:ig+cWin], 0] == td[cond_m1[ig:ig+cWin]+1, 0])[0])
+                        n_switch    = len(_N.where(td[cond_m1[ig:ig+cWin], 0] != td[cond_m1[ig:ig+cWin]+1, 0])[0])                        
+                        #  DN | cond
+                        pCond[shf, icnd*2, tMid]      = n_stays  / cWin
+                        pCond[shf, icnd*2+1, tMid]  = n_switch / cWin
+
+                ###############################################
+                #  go back, fill in the -1s
+                if icndT != 3:
+                    definedTs = _N.where(pCond[shf, icnd*3] != -1)[0]
+                    definedTs_last = _N.array(definedTs.tolist() + [Tgame-win])
+
+                    #  first -1s fill with first observed value
+                    pCond[shf, icnd*3, 0:definedTs_last[0]] = pCond[shf, icnd*3, definedTs_last[0]]
+                    pCond[shf, icnd*3+1, 0:definedTs_last[0]] = pCond[shf, icnd*3+1, definedTs_last[0]]
+                    pCond[shf, icnd*3+2, 0:definedTs_last[0]] = pCond[shf, icnd*3+2, definedTs_last[0]]                    
+                    # if I find a defined probability, go forward in time until next defined one, and fill it with my current value
+                    for itd in range(len(definedTs_last)-1):
+                        pCond[shf, icnd*3,   definedTs_last[itd]+1:definedTs_last[itd+1]] = pCond[shf, icnd*3, definedTs_last[itd]]
+                        pCond[shf, icnd*3+1, definedTs_last[itd]+1:definedTs_last[itd+1]] = pCond[shf, icnd*3+1, definedTs_last[itd]]
+                        pCond[shf, icnd*3+2, definedTs_last[itd]+1:definedTs_last[itd+1]] = pCond[shf, icnd*3+2, definedTs_last[itd]]
+                        #print(pCond[shf, icnd*3])
+                elif icndT == 3:
+                    definedTs = _N.where(pCond[shf, icnd*2] != -1)[0]
+                    definedTs_last = _N.array(definedTs.tolist() + [Tgame-win])
+
+                    #  first -1s fill with first observed value
+                    pCond[shf, icnd*2, 0:definedTs_last[0]] = pCond[shf, icnd*2, definedTs_last[0]]
+                    pCond[shf, icnd*2+1, 0:definedTs_last[0]] = pCond[shf, icnd*2+1, definedTs_last[0]]
+                    
+                    #  if I find a defined probability, go forward in time until next defined one, and fill it with my current value
+                    for itd in range(len(definedTs_last)-1):
+                        pCond[shf, icnd*2,   definedTs_last[itd]+1:definedTs_last[itd+1]] = pCond[shf, icnd*2, definedTs_last[itd]]
+                        pCond[shf, icnd*2+1, definedTs_last[itd]+1:definedTs_last[itd+1]] = pCond[shf, icnd*2+1, definedTs_last[itd]]
+
+
+                        # for conds in [[wins_m1, ties_m1, loss_m1], [wins_m1, ties_m1, loss_m1], [R_m1, S_m1, P_m1], [wins_m1, ties_m1, loss_m1]]:                        
+                        
+    return cprobsDSU_WTL, cprobsRPS_WTL, cprobsDSU_RPS, cprobsSTSW, all_tds, Tgame
+
+
+def empirical_NGS(dat, SHUF=0, win=20, flip_human_AI=False, expt="EEG1", visit=None, dither_unobserved=False):
     _td, start_tm, end_tm, UA, cnstr, inp_meth, ini_percep, fin_percep = _rt.return_hnd_dat(dat, has_useragent=True, has_start_and_end_times=True, has_constructor=True, flip_human_AI=flip_human_AI, expt=expt, visit=visit)
     if _td is None:
         return None, None
@@ -152,7 +284,7 @@ def empirical_NGS(dat, SHUF=0, win=20, flip_human_AI=False, covariates=_AIconst.
                 cprobsRPS[shf, 2, i] = n_win_P / n_win
                 cprobsSTSW[shf, 0, i] = n_win_st / n_win
                 cprobsSTSW[shf, 1, i] = (n_win_dn+n_win_up) / n_win
-            else:
+            else:     #  no wins observed, continue with last value
                 cprobs[shf, 0, i] = cprobs[shf, 0, i-1]
                 cprobs[shf, 1, i] = cprobs[shf, 1, i-1]
                 cprobs[shf, 2, i] = cprobs[shf, 2, i-1]
@@ -171,7 +303,7 @@ def empirical_NGS(dat, SHUF=0, win=20, flip_human_AI=False, covariates=_AIconst.
                 cprobsRPS[shf, 5, i] = n_tie_P / n_tie
                 cprobsSTSW[shf, 2, i] = n_tie_st / n_tie
                 cprobsSTSW[shf, 3, i] = (n_tie_dn+n_tie_up) / n_tie
-            else:
+            else:     #  no ties observed, continue with last value
                 cprobs[shf, 3, i] = cprobs[shf, 3, i-1]
                 cprobs[shf, 4, i] = cprobs[shf, 4, i-1]
                 cprobs[shf, 5, i] = cprobs[shf, 5, i-1]
@@ -227,8 +359,60 @@ def empirical_NGS(dat, SHUF=0, win=20, flip_human_AI=False, covariates=_AIconst.
                 cprobsDSURPS[shf, 6, i] = cprobsDSURPS[shf, 6, i-1]
                 cprobsDSURPS[shf, 7, i] = cprobsDSURPS[shf, 7, i-1]
                 cprobsDSURPS[shf, 8, i] = cprobsDSURPS[shf, 8, i-1]
-                
+
+    if dither_unobserved:  #  changing probability at next observation after
+                           #  long period of not observing a condition (say W)
+        for i in range(Tgame-win-1, 0, -1):
+            if cprobs[shf, 0, i] == cprobs[shf, 0, i-1]:
+                if _N.random.rand() < 0.5:  #  push it back
+                    cprobs[shf, 0, i-1] = cprobs[shf, 0, i-2]
+                    cprobs[shf, 1, i-1] = cprobs[shf, 1, i-2]
+                    cprobs[shf, 2, i-1] = cprobs[shf, 2, i-2]
+            if cprobs[shf, 3, i] == cprobs[shf, 3, i-1]:
+                if _N.random.rand() < 0.5:  #  push it back
+                    cprobs[shf, 3, i-1] = cprobs[shf, 3, i-2]
+                    cprobs[shf, 4, i-1] = cprobs[shf, 4, i-2]
+                    cprobs[shf, 5, i-1] = cprobs[shf, 5, i-2]
+            if cprobs[shf, 6, i] == cprobs[shf, 6, i-1]:
+                if _N.random.rand() < 0.5:  #  push it back
+                    cprobs[shf, 6, i-1] = cprobs[shf, 6, i-2]
+                    cprobs[shf, 7, i-1] = cprobs[shf, 7, i-2]
+                    cprobs[shf, 8, i-1] = cprobs[shf, 8, i-2]
+        for i in range(Tgame-win-1, 0, -1):
+            if cprobsRPS[shf, 0, i] == cprobsRPS[shf, 0, i-1]:
+                if _N.random.rand() < 0.5:  #  push it back
+                    cprobsRPS[shf, 0, i-1] = cprobsRPS[shf, 0, i-2]
+                    cprobsRPS[shf, 1, i-1] = cprobsRPS[shf, 1, i-2]
+                    cprobsRPS[shf, 2, i-1] = cprobsRPS[shf, 2, i-2]
+            if cprobsRPS[shf, 3, i] == cprobsRPS[shf, 3, i-1]:
+                if _N.random.rand() < 0.5:  #  push it back
+                    cprobsRPS[shf, 3, i-1] = cprobsRPS[shf, 3, i-2]
+                    cprobsRPS[shf, 4, i-1] = cprobsRPS[shf, 4, i-2]
+                    cprobsRPS[shf, 5, i-1] = cprobsRPS[shf, 5, i-2]
+            if cprobsRPS[shf, 6, i] == cprobsRPS[shf, 6, i-1]:
+                if _N.random.rand() < 0.5:  #  push it back
+                    cprobsRPS[shf, 6, i-1] = cprobsRPS[shf, 6, i-2]
+                    cprobsRPS[shf, 7, i-1] = cprobsRPS[shf, 7, i-2]
+                    cprobsRPS[shf, 8, i-1] = cprobsRPS[shf, 8, i-2]
+        for i in range(Tgame-win-1, 0, -1):
+            if cprobsDSURPS[shf, 0, i] == cprobsDSURPS[shf, 0, i-1]:
+                if _N.random.rand() < 0.5:  #  push it back
+                    cprobsDSURPS[shf, 0, i-1] = cprobsDSURPS[shf, 0, i-2]
+                    cprobsDSURPS[shf, 1, i-1] = cprobsDSURPS[shf, 1, i-2]
+                    cprobsDSURPS[shf, 2, i-1] = cprobsDSURPS[shf, 2, i-2]
+            if cprobsDSURPS[shf, 3, i] == cprobsDSURPS[shf, 3, i-1]:
+                if _N.random.rand() < 0.5:  #  push it back
+                    cprobsDSURPS[shf, 3, i-1] = cprobsDSURPS[shf, 3, i-2]
+                    cprobsDSURPS[shf, 4, i-1] = cprobsDSURPS[shf, 4, i-2]
+                    cprobsDSURPS[shf, 5, i-1] = cprobsDSURPS[shf, 5, i-2]
+            if cprobsDSURPS[shf, 6, i] == cprobsDSURPS[shf, 6, i-1]:
+                if _N.random.rand() < 0.5:  #  push it back
+                    cprobsDSURPS[shf, 6, i-1] = cprobsDSURPS[shf, 6, i-2]
+                    cprobsDSURPS[shf, 7, i-1] = cprobsDSURPS[shf, 7, i-2]
+                    cprobsDSURPS[shf, 8, i-1] = cprobsDSURPS[shf, 8, i-2]
+    
     return cprobs, cprobsRPS, cprobsDSURPS, cprobsSTSW, all_tds, Tgame
+
 
 #  down | win, stay | win, up | win
 #  down | tie, stay | tie, up | tie

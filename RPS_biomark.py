@@ -1,7 +1,5 @@
 #!/usr/bin/python
 
-from sklearn import linear_model
-import sklearn.linear_model as _skl
 import numpy as _N
 import AIiRPS.utils.read_taisen as _rt
 import scipy.io as _scio
@@ -9,27 +7,15 @@ import scipy.stats as _ss
 import matplotlib.pyplot as _plt
 import AIiRPS.utils.read_taisen as _rd
 import AIiRPS.utils.misc as _Am
-from scipy.signal import savgol_filter
-from GCoh.eeg_util import unique_in_order_of_appearance, increasing_labels_mapping, rmpd_lab_trnsfrm, find_or_retrieve_GMM_labels, shift_correlated_shuffle, shuffle_discrete_contiguous_regions, mtfftc
-import AIiRPS.skull_plot as _sp
 import os
 import sys
-from sumojam.devscripts.cmdlineargs import process_keyval_args
 import pickle
-import mne.time_frequency as mtf
-import GCoh.eeg_util as _eu
 import AIiRPS.rpsms as rpsms
-import GCoh.preprocess_ver as _ppv
 
-import AIiRPS.constants as _cnst
 from AIiRPS.utils.dir_util import getResultFN
-import GCoh.datconfig as datconf
+
 import AIiRPS.models.CRutils as _crut
 import AIiRPS.models.empirical_ken as _emp
-from sklearn.decomposition import PCA
-
-import GCoh.eeg_util as _eu
-import matplotlib.ticker as ticker
 
 import feature_names as _feat_names
 import AIRPSfeatures as _aift
@@ -184,30 +170,29 @@ if data == "RAND":
     for i in range(USE):
         partIDs.append(_partIDs[these[i]])
 
-#visit = 2
-#visits= [1, 2]   #  if I want 1 of [1, 2], set this one to [1, 2]
 visit = 1
 visits= [1, ]   #  if I want 1 of [1, 2], set this one to [1, 2]
+#visit = 2
+#visits= [1, 2]   #  if I want 1 of [1, 2], set this one to [1, 2]
     
 if data == "TMB2":
     dates = _rt.date_range(start='7/13/2021', end='12/30/2021')
     #partIDs, dats, cnstrs = _rt.filterRPSdats(data, dates, visits=visits, domainQ=(_rt._TRUE_ONLY_ if look_at_AQ else _rt._TRUE_AND_FALSE_), demographic=_rt._TRUE_AND_FALSE_, mentalState=_rt._TRUE_AND_FALSE_, min_meanIGI=500, max_meanIGI=15000, minIGI=20, maxIGI=30000, MinWinLossRat=0.35, has_useragent=True, has_start_and_end_times=True, has_constructor=True, blocks=1)
-    partIDs, dats, cnstrs = _rt.filterRPSdats(data, dates, visits=visits, domainQ=(_rt._TRUE_ONLY_ if look_at_AQ else _rt._TRUE_AND_FALSE_), demographic=_rt._TRUE_AND_FALSE_, mentalState=_rt._TRUE_AND_FALSE_, min_meanIGI=500, max_meanIGI=15000, minIGI=20, maxIGI=30000, MinWinLossRat=0.35, has_useragent=True, has_start_and_end_times=True, has_constructor=True, blocks=1)
+    partIDs, dats, cnstrs = _rt.filterRPSdats(data, dates, visits=visits, domainQ=(_rt._TRUE_ONLY_ if look_at_AQ else _rt._TRUE_AND_FALSE_), demographic=_rt._TRUE_AND_FALSE_, mentalState=_rt._TRUE_AND_FALSE_, min_meanIGI=500, max_meanIGI=15000, minIGI=20, maxIGI=30000, MinWinLossRat=0.3, has_useragent=True, has_start_and_end_times=True, has_constructor=True, blocks=1)
     #partIDs, dats, cnstrs = _rt.filterRPSdats(data, dates, visits=[1], domainQ=(_rt._TRUE_ONLY_ if look_at_AQ else _rt._TRUE_AND_FALSE_), demographic=_rt._TRUE_AND_FALSE_, mentalState=_rt._TRUE_AND_FALSE_, min_meanIGI=800, max_meanIGI=8000, minIGI=200, maxIGI=30000, MinWinLossRat=0.4, has_useragent=True, has_start_and_end_times=True, has_constructor=True, blocks=1)
     ####  use this for reliability
     #partIDs, dats, cnstrs = _rt.filterRPSdats(data, dates, visits=visits, domainQ=(_rt._TRUE_AND_FALSE_ if look_at_AQ else _rt._TRUE_AND_FALSE_), demographic=_rt._TRUE_AND_FALSE_, mentalState=_rt._TRUE_AND_FALSE_, min_meanIGI=500, max_meanIGI=8000, minIGI=50, maxIGI=30000, MinWinLossRat=0.4, has_useragent=True, has_start_and_end_times=True, has_constructor=True, blocks=1)
 
 A1 = []
 show_shuffled = False
-process_keyval_args(globals(), sys.argv[1:])
 #######################################################
 
 win_type = 2   #  window is of fixed number of games
-win_type = 1  #  window is of fixed number of games that meet condition 
+#win_type = 1  #  window is of fixed number of games that meet condition 
 win     = 3
-win     = 4
+#win     = 4
 smth    = 1
-smth    = 3
+#smth    = 3
 label          = win_type*100+win*10+smth
 TO = 300
 SHF_NUM = 0
@@ -303,6 +288,8 @@ moresimSW  = _N.empty(len(partIDs))
 moresim  = _N.empty(len(partIDs))
 moresiment  = _N.empty(len(partIDs))
 sum_sd_DSUWTL = _N.empty((len(partIDs), 3, 3))
+sum_skew_DSUWTL = _N.empty((len(partIDs), 3, 3))
+
 sum_ent_DSUWTL = _N.empty((len(partIDs), 3, 3))
 
 sum_mn = _N.empty((len(partIDs), 3, 3))
@@ -432,6 +419,7 @@ end_strts     = _N.empty(len(partIDs))
 all_AI_weights = _N.empty((len(partIDs), TO+1, 3, 3, 2))
 all_AI_preds = _N.empty((len(partIDs), TO+1, 3))
 
+n_copies = _N.empty(len(partIDs), dtype=_N.int)
 all_maxs  = []
 
 aboves = []
@@ -443,7 +431,7 @@ istrtend     = 0
 strtend      = _N.zeros(len(partIDs)+1, dtype=_N.int)
 
 incomplete_data = []
-gkISI = _Am.gauKer(1)
+gkISI = _Am.gauKer(2)
 gkISI /= _N.sum(gkISI)
 
 #  DISPLAYED AS R,S,P
@@ -452,9 +440,14 @@ gkISI /= _N.sum(gkISI)
 #  look for PR PS PP
 
 ths = _N.where((AQ28scrs > 35))[0]
+resp_times_OK = []
 L30  = 30
+
+not_outliers = []
 for partID in partIDs:
     pid += 1
+    if (partID != "20210801_0015-00") and (partID != "20210801_0020-00") and (partID != "20211021_0130-00") and (partID != "20210924_0025-00") and (partID != "20211004_0015-00") and (partID != "20211018_0010-00"):
+        not_outliers.append(pid-1)
 
     dmp       = depickle(getResultFN("%(rpsm)s/%(lb)d/WTL_%(v)d.dmp" % {"rpsm" : partID, "lb" : label, "v" : visit}))
     _prob_mvs = dmp["cond_probs"][SHF_NUM][:, strtTr:]
@@ -478,7 +471,11 @@ for partID in partIDs:
         AQ28scrs[pid-1], soc_skils[pid-1], rout[pid-1], switch[pid-1], imag[pid-1], fact_pat[pid-1] = _rt.AQ28("/Users/arai/Sites/taisen/DATA/%(data)s/%(date)s/%(pID)s/AQ29.txt" % {"date" : partIDs[pid-1][0:8], "pID" : partIDs[pid-1], "data" : data})
         ages[pid-1], gens[pid-1], Engs[pid-1] = _rt.Demo("/Users/arai/Sites/taisen/DATA/%(data)s/%(date)s/%(pID)s/DQ1.txt" % {"date" : partIDs[pid-1][0:8], "pID" : partIDs[pid-1], "data" : data})        
     
-    _aift.resptime_aft_wtl(_hnd_dat, TO, pid, inp_meth, time_aft_win, time_aft_tie, time_aft_los)
+    n_mouse, n_keys, mouse_resp_t, key_resp_t = _aift.resptime_aft_wtl(_hnd_dat, TO, pid, inp_meth, time_aft_win, time_aft_tie, time_aft_los)
+    if (n_mouse > 0) and (n_keys > 0) and (n_keys > 50) and (key_resp_t) < 300:
+        print("keyboard really short")
+    else:
+        resp_times_OK.append(pid-1)
 
     _aift.wtl_after_wtl(_hnd_dat, TO, pid, win_aft_win, tie_aft_win, los_aft_win, win_aft_tie, tie_aft_tie, los_aft_tie, win_aft_los, tie_aft_los, los_aft_los, R_aft_win, S_aft_win, P_aft_win, R_aft_tie, S_aft_tie, P_aft_tie, R_aft_los, S_aft_los, P_aft_los)
     #resptime_after_wtl()
@@ -506,10 +503,13 @@ for partID in partIDs:
     #dbehv = _crut.get_dbehv(prob_mvs, gk, equalize=True)
     #dbehv = _crut.get_dbehv(prob_mvs, gkISI, equalize=True)
     #dbehv_RPS = _crut.get_dbehv(prob_mvs_RPS, gkISI, equalize=True)
-    #dbehv_DSURPS = _crut.get_dbehv(prob_mvs_DSURPS, gkISI, equalize=True)    
-    dbehv_DSUWTL = _crut.get_dbehv(prob_mvs, None, equalize=True)
-    dbehv_RPSWTL = _crut.get_dbehv(prob_mvs_RPS, None, equalize=True)
-    dbehv_DSURPS = _crut.get_dbehv(prob_mvs_DSURPS, None, equalize=True)    
+    #dbehv_DSURPS = _crut.get_dbehv(prob_mvs_DSURPS, gkISI, equalize=True)
+    # dbehv_DSUWTL = _crut.get_dbehv(prob_mvs, None, equalize=True)
+    # dbehv_RPSWTL = _crut.get_dbehv(prob_mvs_RPS, None, equalize=True)
+    # dbehv_DSURPS = _crut.get_dbehv(prob_mvs_DSURPS, None, equalize=True)    
+    dbehv    = _crut.get_dbehv_combined([prob_mvs_RPS, prob_mvs_DSURPS, prob_mvs], gkISI, equalize=True)
+    
+    n_copies[pid-1] = _N.sum(_hnd_dat[1:, 0] == _hnd_dat[0:-1, 1])
 
     tMv = _N.diff(_hnd_dat[:, 3])
     succ = _hnd_dat[1:, 2]
@@ -518,10 +518,11 @@ for partID in partIDs:
     #dbehv = _N.convolve(dbehv + 0.115*dbehv_RPS, gkISI, mode="same")# + 0.01*dbehv_DSURPS
     #dbehv = _N.convolve(dbehv + 0.5*dbehv_RPS, gkISI, mode="same")# + 0.01*dbehv_DSURPS
     #dbehv = _N.convolve(dbehv_DSURPS, gkISI, mode="same")# + 0.01*dbehv_DSURPS
-    dbehv = _N.convolve(dbehv_DSUWTL + 0.5*dbehv_DSURPS, gkISI, mode="same")# + 0.01*dbehv_DSURPS
+    #dbehv = _N.convolve(dbehv_ALL, gkISI, mode="same")# + 0.01*dbehv_DSURPS
+    #dbehv = dbehv_ALL
     
-    dbehv_DSURPS = _N.convolve(dbehv_DSURPS, gkISI, mode="same")# + 0.01*dbehv_DSURPS
-    dbehv_DSUWTL = _N.convolve(dbehv_DSUWTL, gkISI, mode="same")# + 0.01*dbehv_DSURPS    
+    #dbehv_DSURPS = _N.convolve(dbehv_DSURPS, gkISI, mode="same")# + 0.01*dbehv_DSURPS
+    #dbehv_DSUWTL = _N.convolve(dbehv_DSUWTL, gkISI, mode="same")# + 0.01*dbehv_DSURPS    
     #dbehv = dbehv+dbehv_DSURPS
     #dbehv = _N.convolve(dbehv + 0.5*dbehv_RPS, gkISI, mode="same")# + 0.01*dbehv_DSURPS
     #dbehv = _N.convolve(dbehv, gkISI, mode="same")# + 0.01*dbehv_DSURPS
@@ -529,8 +530,8 @@ for partID in partIDs:
     
     #fdbehv = _N.convolve(dbehv, gkISI, mode="same")
     maxs = _N.where((dbehv[0:TO-11] >= 0) & (dbehv[1:TO-10] < 0))[0] + (win//2) #  3 from label71
-    maxs_DSUWTL = _N.where((dbehv_DSUWTL[0:TO-11] >= 0) & (dbehv_DSUWTL[1:TO-10] < 0))[0] + (win//2)#  3 from label71
-    maxs_DSURPS = _N.where((dbehv_DSURPS[0:TO-11] >= 0) & (dbehv_DSURPS[1:TO-10] < 0))[0] + (win//2)#  3 from label71
+    #maxs_DSUWTL = _N.where((dbehv_DSUWTL[0:TO-11] >= 0) & (dbehv_DSUWTL[1:TO-10] < 0))[0] + (win//2)#  3 from label71
+    #maxs_DSURPS = _N.where((dbehv_DSURPS[0:TO-11] >= 0) & (dbehv_DSURPS[1:TO-10] < 0))[0] + (win//2)#  3 from label71
 
     preds = all_AI_preds[pid-1]
     
@@ -541,10 +542,6 @@ for partID in partIDs:
     t00 = 5
     t01 = prob_mvs.shape[2]-5
     ctprob_mvs          = prob_mvs[:, :, t00:t01]
-    pc_M1[pid-1],pv               = _ss.pearsonr(ctprob_mvs[0, 1], ctprob_mvs[1, 1])
-    pc_M2[pid-1],pv               = _ss.pearsonr(ctprob_mvs[0, 1], ctprob_mvs[2, 1])
-    pc_M3[pid-1],pv               = _ss.pearsonr(ctprob_mvs[1, 1], ctprob_mvs[2, 2])
-    #
 
     prob_Mimic[0]      = prob_mvs[0, 0]   #  DN | WIN
     prob_Mimic[1]      = prob_mvs[1, 1]   #  ST | TIE
@@ -588,7 +585,7 @@ for partID in partIDs:
     #entsSTSW = _N.array([entropy3(probST.T, PCS), entropy3(probSW.T, PCS)])
     #condition_distinguished = _N.array([entropy3(prob_mvs_STSW[:, 0].T, PCS), entropy3(prob_mvs_STSW[:, 1].T, PCS)])
     wtl_independent = _N.array([entropy2(prob_mvs_STSW[0].T, PCS), entropy2(prob_mvs_STSW[1].T, PCS), entropy2(prob_mvs_STSW[2].T, PCS)])
-    stay_amp = _N.array([_N.std(prob_mvs_STSW[0, 0]), _N.std(prob_mvs_STSW[1, 0]), _N.std(prob_mvs_STSW[2, 0])])
+    #stay_amp = _N.array([_N.std(prob_mvs_STSW[0, 0]), _N.std(prob_mvs_STSW[1, 0]), _N.std(prob_mvs_STSW[2, 0])])
 
     ##  
     pUD_WTL = _N.array([ctprob_mvs[0, 0] + ctprob_mvs[0, 2],
@@ -667,18 +664,18 @@ for partID in partIDs:
     UD_diff[pid-1, 1] = _N.std(ctprob_mvs[1, 0] - ctprob_mvs[1, 2])
     UD_diff[pid-1, 2] = _N.std(ctprob_mvs[2, 0] - ctprob_mvs[2, 2])
 
-    entropyDSUWTL_D[pid-1], entropyDSUWTL_S[pid-1], entropyDSUWTL_U[pid-1] = _aift.entropyCRprobs(prob_mvs, fix="action", normalize=True, PCS=6, PCS1=10)
-    entropyDSUWTL_W[pid-1], entropyDSUWTL_T[pid-1], entropyDSUWTL_L[pid-1] = _aift.entropyCRprobs(prob_mvs, fix="condition", normalize=True, PCS1=10)
+    entropyDSUWTL_D[pid-1], entropyDSUWTL_S[pid-1], entropyDSUWTL_U[pid-1] = _aift.entropyCRprobs(prob_mvs, fix="action", normalize=False, PCS=6, PCS1=10)
+    entropyDSUWTL_W[pid-1], entropyDSUWTL_T[pid-1], entropyDSUWTL_L[pid-1] = _aift.entropyCRprobs(prob_mvs, fix="condition", normalize=False, PCS1=10)
     
-    entropyRPSWTL_R[pid-1], entropyRPSWTL_S[pid-1], entropyRPSWTL_P[pid-1] = _aift.entropyCRprobs(prob_mvs_RPS, fix="action", normalize=True, PCS=PCS, PCS1=10)
-    entropyDSURPS_D[pid-1], entropyDSURPS_S[pid-1], entropyDSURPS_U[pid-1] = _aift.entropyCRprobs(prob_mvs_DSURPS, fix="action", normalize=True, PCS=PCS, PCS1=10)    
+    entropyRPSWTL_R[pid-1], entropyRPSWTL_S[pid-1], entropyRPSWTL_P[pid-1] = _aift.entropyCRprobs(prob_mvs_RPS, fix="action", normalize=False, PCS=PCS, PCS1=10)
+    entropyDSURPS_D[pid-1], entropyDSURPS_S[pid-1], entropyDSURPS_U[pid-1] = _aift.entropyCRprobs(prob_mvs_DSURPS, fix="action", normalize=False, PCS=PCS, PCS1=10)    
     
     entropyW2[pid-1] = wtl_independent[0]
     entropyT2[pid-1] = wtl_independent[1]
     entropyL2[pid-1] = wtl_independent[2]
     actions_independent[pid-1] = wtl_independent                   #  3
     #cond_distinguished[pid-1] = condition_distinguished  #  2
-    stay_amps[pid-1] = stay_amp     # 3 components
+    #stay_amps[pid-1] = stay_amp     # 3 components
 
     THRisi = 2
     #isi   = _N.diff(maxs)
@@ -699,12 +696,12 @@ for partID in partIDs:
     #_plt.close()
     entDSUWTL = entropyDSUWTL_D[pid-1] + entropyDSUWTL_S[pid-1] + entropyDSUWTL_U[pid-1]
     entDSURPS = entropyDSURPS_D[pid-1] + entropyDSURPS_S[pid-1] + entropyDSURPS_U[pid-1]    
-    if entDSUWTL > entDSURPS:
-        isi   = cleanISI(_N.diff(maxs_DSUWTL), minISI=1)
-    else:
-        isi   = cleanISI(_N.diff(maxs_DSURPS), minISI=1)
-    maxs = maxs_DSUWTL
-    _aift.rulechange(_hnd_dat, signal_5_95, all_avgs, SHUFFLES, t0, t1, maxs, cut, pid)
+    #if entDSUWTL > entDSURPS:
+    isi   = cleanISI(_N.diff(maxs), minISI=3)
+    #else:
+    #    isi   = cleanISI(_N.diff(maxs_DSURPS), minISI=1)
+    #maxs = maxs_DSUWTL
+    _aift.rulechange(_hnd_dat, signal_5_95, pfrm_change36, pfrm_change69, pfrm_change912, imax_imin_pfrm36, imax_imin_pfrm69, imax_imin_pfrm912, all_avgs, SHUFFLES, t0, t1, maxs, cut, pid)
     #isi   = cleanISI(_N.diff(maxs), minISI=2)
     pc, pv = rm_outliersCC_neighbors(isi[0:-1], isi[1:])    
     isis_corr[pid-1] = pc
@@ -715,6 +712,7 @@ for partID in partIDs:
     all_maxs.append(isi)    
 
     sdsDSUWTL = _N.std(ctprob_mvs, axis=2)
+    skwDSUWTL = _ss.kurtosis(ctprob_mvs, axis=2)
     for i in range(3):
         for j in range(3):
             sum_ent_DSUWTL[pid-1, i, j] = _aift.entropy1(ctprob_mvs[i, j], 10)
@@ -729,6 +727,7 @@ for partID in partIDs:
     
     #sum_cv[pid-1] = sds/(1-_N.abs(0.5-mns))
     sum_sd_DSUWTL[pid-1] = sdsDSUWTL
+    sum_skew_DSUWTL[pid-1] = skwDSUWTL    
     sum_mn[pid-1] = mns
     sum_mn_DSURPS[pid-1] = mnsDSURPS
     sum_sd_RPSWTL[pid-1] = sdsRPSWTL
@@ -757,11 +756,11 @@ for partID in partIDs:
             stayLs.append(L)
             L = 1
     mn_stayL[pid-1] = _N.std(stayLs)
-    maxs = maxs_DSUWTL
+    #maxs = maxs_DSUWTL
 
     cntrsDSUWTL[pid-1, 0], cntrsDSUWTL[pid-1, 1] = _aift.cntrmvs_DSUWTL(prob_mvs, TO)
     cntrsDSURPS[pid-1, 0], cntrsDSURPS[pid-1, 1] = _aift.cntrmvs_DSURPS(prob_mvs_DSURPS, TO)
-    cntrsRPSWTL[pid-1, 0], cntrsRPSWTL[pid-1, 1] = _aift.cntrmvs_RPSWTL(prob_mvs_DSURPS, TO)
+    cntrsRPSWTL[pid-1, 0], cntrsRPSWTL[pid-1, 1] = _aift.cntrmvs_RPSWTL(prob_mvs_RPS, TO)
 
     _aift.action_result(_hnd_dat, TO, pid, u_or_d_res, dn_res, up_res, stay_res, u_or_d_tie, stay_tie)
 
@@ -772,8 +771,15 @@ for partID in partIDs:
     ilis = _N.diff(_N.where(_hnd_dat[:, 2] == -1)[0])
     ilis_cv[pid-1] = _N.std(ilis) / _N.mean(ilis)
 
+
+####  choose
+ths = _N.where((AQ28scrs > 35))[0]
+good = _N.intersect1d(ths, resp_times_OK)
+good = _N.intersect1d(not_outliers, good)
+filtdat = good
+
 #############  AI WEIGHTS
-FEAT1, FEAT2, FEAT3, FEAT4, FEAT5, FEAT6, AIent1, AIent2, AIent3, AIent4, mn_diff_top2, sd_diff_top2, mnFt1, mnFt2, mnFt3, mnFt4, mnFt5, mnFt6, mnFt7, mnFt8, sdFt1, sdFt2, sdFt3, sdFt4, sdFt5, sdFt6, sdFt7, sdFt8 = _aift.perceptron_features(all_AI_weights, all_AI_preds, partIDs)
+FEAT1, FEAT2, FEAT3, FEAT4, FEAT5, FEAT6, AIent1, AIent2, AIent3, AIent4, AIent5, AIent6, AIent7, AIent8, mn_diff_top2, sd_diff_top2, mnFt1, mnFt2, mnFt3, mnFt4, mnFt5, mnFt6, mnFt7, mnFt8, sdFt1, sdFt2, sdFt3, sdFt4, sdFt5, sdFt6, sdFt7, sdFt8, aift1, aift2, aift3, aift4, aift5, aift6 = _aift.perceptron_features(all_AI_weights, all_AI_preds, partIDs)
 
 
 USDdiff0 = _N.std(marginalCRs, axis=2)[:, 0]   #  how different are USD in LOSE condition
@@ -807,7 +813,7 @@ cntrsRPSWTL /= _N.sum(cntrsRPSWTL, axis=1).reshape(len(partIDs), 1)
 cntrmvs_RPSWTL = cntrsRPSWTL[:, 1] - cntrsRPSWTL[:, 0]
 
 cntrmvsDIFF = cntrmvs_DSUWTL - cntrmvs_DSURPS
-cntrmvsSUM  = cntrmvs_DSUWTL + cntrmvs_RPSWTL
+cntrmvsSUM  = cntrmvs_DSUWTL + cntrmvs_RPSWTL#(cntrmvs_DSUWTL[:, 1] + cntrsmvs_RPSWTL[:, 1]) - (cntrmvs_DSUWTL[:, 0] + cntrsmvs_RPSWTL[:, 0])
 
 #  sum_sd_RPSWTL
 #  cntrsDSUWTL
@@ -843,17 +849,18 @@ cntrmvsSUM  = cntrmvs_DSUWTL + cntrmvs_RPSWTL
 #                  "diff_sds1", "diff_sds2",
 #                  "cntrmvs", "sd_diff_top2"]
 
+comp_isi_stat    = isis - 10*isis_lv - 3*isis_cv
 features_cab2    = ["sum_sd_DSUWTL", "sum_sd_DSURPS", "sum_sd_RPSWTL",
-                    "DSUWTL_corrs", "DSURPS_corrs", "RPSWTL_corrs",
-                    "cntrmvsDIFF", "cntrmvsSUM"]
+                    "DSUWTL_corrs", "DSURPS_corrs", "RPSWTL_corrs", "cntrmvs_DSUWTL", "cntrmvs_DSURPS", "cntrmvs_RPSWTL",
+                    "cntrmvsDIFF", "cntrmvsSUM", "isis", "isis_corr", "isis_cv", "isis_lv", "comp_isi_stat", "entropyDSUWTL_D", "entropyDSUWTL_S", "entropyDSUWTL_U", "pfrm_change69"]
 
-features_cab1 = []
+features_cab1 = ["time_aft_win", "time_aft_tie", "time_aft_los"]
 #features_cab1 = []#"sds00", "sds01", "sds02",
                  #"sds10", "sds11", "sds12",
                  #"sds20", "sds21", "sds22"]#, "sds20_m_sds22", "sds01_m_sds11",
 #                 "sds01_m_sds12"]
 
-features_AI  = ["mnFt1", "mnFt2", "mnFt3", "mnFt4", "mnFt5", "mnFt6", "mnFt7", "mnFt8", "sdFt1", "sdFt2", "sdFt3", "sdFt4", "sdFt5", "sdFt6", "sdFt7", "sdFt8"]
+features_AI  = ["mn_diff_top2", "sd_diff_top2", "mnFt1", "mnFt2", "mnFt3", "mnFt4", "mnFt5", "mnFt6", "mnFt7", "mnFt8", "sdFt1", "sdFt2", "sdFt3", "sdFt4", "sdFt5", "sdFt6", "sdFt7", "sdFt8", "aift1", "aift2", "aift3", "aift4", "aift5", "aift6", "AIent1", "AIent2", "AIent3", "AIent4", "AIent5", "AIent6", "AIent7", "AIent8", "FEAT1", "FEAT2", "FEAT3", "FEAT4"]
 
 #features_cab = ["moresimV4"]
 #    "m_BW", "m_BT", "m_BL", "sd_MW", 
@@ -870,17 +877,49 @@ features_stat= ["u_or_d_res", "u_or_d_tie","up_res", "dn_res",
                 "P_aft_win", "P_aft_tie", "P_aft_los"]                
 
 cmp_againsts = features_cab1 + features_cab2 + features_stat + features_AI
+cmp_againsts_name = []
 dmp_dat = {}
 for cmp_vs in cmp_againsts:
-    dmp_dat[cmp_vs] = eval(cmp_vs)
+    if cmp_vs[0:6] == "sum_sd":
+        for i in range(3):
+            for j in range(3):
+                name = "%(nm)s_%(i)d%(j)d" % {"nm" : cmp_vs, "i" : i, "j" : j}
+                dat = eval(cmp_vs)
+                dmp_dat[name] = dat[:, i, j]
+                cmp_againsts_name.append(name)
+    elif cmp_vs[7:12] == "corrs":
+        for i in range(36):
+            name = "%(nm)s_%(i)d" % {"nm" : cmp_vs, "i" : i}
+            cmp_againsts_name.append(name)            
+            dat = eval(cmp_vs)
+            dmp_dat[name] = dat[i]
+    elif (cmp_vs[0:4] == "mnFt") or (cmp_vs[0:4] == "sdFt"):
+        for i in range(3):
+            name = "%(nm)s_%(i)d" % {"nm" : cmp_vs, "i" : i}
+            cmp_againsts_name.append(name)
+            dat = eval(cmp_vs)                
+            dmp_dat[name] = dat[:, i]
+    elif (cmp_vs[0:4] == "aift"):
+        for i in range(3):
+            name = "%(nm)s_%(i)d" % {"nm" : cmp_vs, "i" : i}
+            cmp_againsts_name.append(name)
+            dat = eval(cmp_vs)                
+            dmp_dat[name] = dat[:, i]
+    else:
+        cmp_againsts_name.append(cmp_vs)
+        dmp_dat[cmp_vs] = eval(cmp_vs)                
 
 # = _N.std(marginalCRs, axis=2)   #  how different are USD in LOSE condition
-
+#  it turns out DSUWTL_corrs[3] + DSUWTL_corrs[4] is highly colinear with DSUWTL_corrs[2] - so including spc_feat1 de-selects DSUWTL_corrs[2]
+#spc_feat1 = DSUWTL_corrs[3] + DSUWTL_corrs[4]
+#dmp_dat["spc_feat1"] = spc_feat1
+#cmp_againsts_name.append("spc_feat1")
 
 dmp_dat["features_cab1"]  = features_cab1
 dmp_dat["features_cab2"]  = features_cab2
 dmp_dat["features_stat"]  = features_stat
 dmp_dat["features_AI"]    = features_AI
+dmp_dat["cmp_againsts_name"] = cmp_againsts_name
 dmp_dat["marginalCRs"] = marginalCRs
 dmp_dat["AQ28scrs"]    = AQ28scrs
 dmp_dat["soc_skils"] = soc_skils
@@ -913,6 +952,7 @@ dmp_dat["all_AI_weights"] = all_AI_weights
 dmp_dat["data"] = data
 dmp_dat["end_strts"] = end_strts
 dmp_dat["hnd_dat_all"] = hnd_dat_all
+dmp_dat["filtdat"] = filtdat
 
 
 dmpout = open("predictAQ28dat/AQ28_vs_RPS_%(v)d_%(wt)d%(w)d%(s)d.dmp" % {"v" : visit, "wt" : win_type, "w" : win, "s" : smth}, "wb")
@@ -944,19 +984,19 @@ dmpout.close()
 sfeats  = ["R_aft_tie", "R_aft_win", "R_aft_los",
            "P_aft_tie", "P_aft_win", "P_aft_los",
            "S_aft_tie", "S_aft_win", "S_aft_los"]
-
+"""
 for sfeat in sfeats:
     exec("feat = %s" % sfeat)
     print("---------   %s" % sfeat)
-    pc, pv = _ss.pearsonr(feat[ths], soc_skils[ths])
+    pc, pv = _ss.pearsonr(feat[filtdat], soc_skils[filtdat])
     print("SS pc %(pc).3f   pv %(pv).1e" % {"pc" : pc, "pv" : pv})
-    pc, pv = _ss.pearsonr(feat[ths], imag[ths])
+    pc, pv = _ss.pearsonr(feat[filtdat], imag[filtdat])
     print("IM pc %(pc).3f   pv %(pv).1e" % {"pc" : pc, "pv" : pv})
-    pc, pv = _ss.pearsonr(feat[ths], rout[ths])
+    pc, pv = _ss.pearsonr(feat[filtdat], rout[filtdat])
     print("RT pc %(pc).3f   pv %(pv).1e" % {"pc" : pc, "pv" : pv})
-    pc, pv = _ss.pearsonr(feat[ths], switch[ths])
+    pc, pv = _ss.pearsonr(feat[filtdat], switch[filtdat])
     print("SW %(pc).3f   pv %(pv).1e" % {"pc" : pc, "pv" : pv})
-    pc, pv = _ss.pearsonr(feat[ths], fact_pat[ths])
+    pc, pv = _ss.pearsonr(feat[filtdat], fact_pat[filtdat])
     print("FP pc %(pc).3f   pv %(pv).1e" % {"pc" : pc, "pv" : pv})
 
 
@@ -964,55 +1004,65 @@ sfeats  = ["sum_sd_RPS[:, 0, 0]", "sum_sd_RPS[:, 0, 1]", "sum_sd_RPS[:, 0, 2]",
            "sum_sd_RPS[:, 1, 0]", "sum_sd_RPS[:, 1, 1]", "sum_sd_RPS[:, 1, 2]",
            "sum_sd_RPS[:, 2, 0]", "sum_sd_RPS[:, 2, 1]", "sum_sd_RPS[:, 2, 2]"]
 
-ths = _N.where((AQ28scrs > 35))[0]
-
 for star in ["AQ28scrs", "soc_skils", "imag", "rout", "switch", "fact_pat"]:
     exec("tar = %s" % star)
-    pcW, pvW = rm_outliersCC_neighbors(tar[ths], time_aft_win[ths])
-    pcT, pvT = rm_outliersCC_neighbors(tar[ths], time_aft_tie[ths])
-    pcL, pvL = rm_outliersCC_neighbors(tar[ths], time_aft_los[ths])
-    # pcW, pvW = _ss.pearsonr(tar[ths], time_aft_win[ths])
-    # pcT, pvT = _ss.pearsonr(tar[ths], time_aft_tie[ths])
-    # pcL, pvL = _ss.pearsonr(tar[ths], time_aft_los[ths])
+    pcW, pvW = rm_outliersCC_neighbors(tar[filtdat], time_aft_win[filtdat])
+    pcT, pvT = rm_outliersCC_neighbors(tar[filtdat], time_aft_tie[filtdat])
+    pcL, pvL = rm_outliersCC_neighbors(tar[filtdat], time_aft_los[filtdat])
+    # pcW, pvW = _ss.pearsonr(tar[filtdat], time_aft_win[filtdat])
+    # pcT, pvT = _ss.pearsonr(tar[filtdat], time_aft_tie[filtdat])
+    # pcL, pvL = _ss.pearsonr(tar[filtdat], time_aft_los[filtdat])
     fig = _plt.figure(figsize=(8, 3))
     _plt.suptitle(star)
     fig.add_subplot(1, 3, 1)
-    _plt.scatter(time_aft_win[ths], tar[ths])
+    _plt.scatter(time_aft_win[filtdat], tar[filtdat])
     fig.add_subplot(1, 3, 2)
-    _plt.scatter(time_aft_tie[ths], tar[ths])
+    _plt.scatter(time_aft_tie[filtdat], tar[filtdat])
     fig.add_subplot(1, 3, 3)
-    _plt.scatter(time_aft_los[ths], tar[ths])
+    _plt.scatter(time_aft_los[filtdat], tar[filtdat])
     print(star)
     print("%(pc).3f  %(pv).3f" % {"pc" : pcW, "pv" : pvW})
     print("%(pc).3f  %(pv).3f" % {"pc" : pcT, "pv" : pvT})
     print("%(pc).3f  %(pv).3f" % {"pc" : pcL, "pv" : pvL})    
-
+"""
 
 entropyDSUWTL = entropyDSUWTL_D + entropyDSUWTL_S + entropyDSUWTL_U
 entropyRPSWTL = entropyRPSWTL_R + entropyRPSWTL_S + entropyRPSWTL_P
 entropyDSURPS = entropyDSURPS_D + entropyDSURPS_S + entropyDSURPS_U
 
-
+"""
 shuffle_scrs = False
 
-sths = _N.array(ths)
+sths = _N.array(filtdat)
 if shuffle_scrs:
     _N.random.shuffle(sths)
 
 print("+++++++++++corr between entropy")
 for star in ["AQ28scrs", "soc_skils", "imag", "rout", "switch", "fact_pat"]:
     exec("tar = %s" % star)
-    #pc, pv = _ss.pearsonr((s1-s3)[ths], tar[sths])
-    pc, pv = _ss.pearsonr((entropyDSUWTL - entropyDSURPS)[ths], tar[sths])
+    #pc, pv = _ss.pearsonr((s1-s3)[filtdat], tar[sths])
+    pc, pv = _ss.pearsonr((entropyDSUWTL - entropyDSURPS)[filtdat], tar[sths])
     #if _N.abs(pc) > 0.15:
     print("%(st)s   %(pc).3f  %(pv).3f" % {"pc" : pc, "pv" : pv, "st" : star})
 
+    
 print("+++++++++++corr between entropy")
 for star in ["AQ28scrs", "soc_skils", "imag", "rout", "switch", "fact_pat"]:
     exec("tar = %s" % star)
-    pc, pv = _ss.pearsonr((entropyDSUWTL_T - entropyDSUWTL_L)[ths], tar[sths])
+    pc, pv = _ss.pearsonr((entropyDSUWTL_S)[filtdat], tar[sths])
     if _N.abs(pc) > 0.15:
         print("AQ28scrs   %(pc).3f  %(pv).3f" % {"pc" : pc, "pv" : pv})
+
+print("+++++++++++corr between entropy")
+#for star in ["AQ28scrs", "soc_skils", "imag", "rout", "switch", "fact_pat"]:
+for star in ["fact_pat"]:
+    exec("tar = %s" % star)
+    for i in range(3):
+        for j in range(3):
+            pc, pv = _ss.pearsonr(marginalCRs[filtdat, i, j], tar[filtdat])
+            #if _N.abs(pc) > 0.15:
+            print("%(i)d %(j)d   %(pc).3f  %(pv).3f" % {"pc" : pc, "pv" : pv, "i" : i, "j" : j})
+        
         
 print("+++++++++++corr between CR prob components")
 for mdl in ["DSUWTL", "RPSWTL", "DSURPS"]:
@@ -1022,10 +1072,12 @@ for mdl in ["DSUWTL", "RPSWTL", "DSURPS"]:
         exec("tar = %s" % star)
         print("!!!!!  %s" % star)
         for ic in range(36):
-            pc, pv = _ss.pearsonr(model[ic, ths], tar[sths])
+            pc, pv = _ss.pearsonr(model[ic, filtdat], tar[sths])
             if _N.abs(pc) > 0.15:
                 print("ic %(ic)d    %(pc).3f  %(pv).3f" % {"pc" : pc, "pv" : pv, "ic" : ic})
+"""
                 
+"""                
 print("..........  sd of components")
 #sum
 for mdl in ["DSUWTL", "RPSWTL", "DSURPS"]:
@@ -1036,11 +1088,11 @@ for mdl in ["DSUWTL", "RPSWTL", "DSURPS"]:
         print("!!!!!  %s" % star)
         for ic1 in range(3):
             for ic2 in range(3):        
-                pc, pv = _ss.pearsonr(model[ths, ic1, ic2], tar[sths])
+                pc, pv = _ss.pearsonr(model[filtdat, ic1, ic2], tar[sths])
                 if _N.abs(pc) > 0.15:
                     print("ic %(ic)d    %(pc).3f  %(pv).3f" % {"pc" : pc, "pv" : pv, "ic" : ic})
 
-""" 
+
 print("..........  sent1 of components")
 #sum
 for mdl in ["DSUWTL", "RPSWTL", "DSURPS"]:
@@ -1051,7 +1103,7 @@ for mdl in ["DSUWTL", "RPSWTL", "DSURPS"]:
         print("!!!!!  %s" % star)
         for ic1 in range(3):
             for ic2 in range(3):        
-                pc, pv = _ss.pearsonr(model[ths, ic1, ic2], tar[sths])
+                pc, pv = _ss.pearsonr(model[filtdat, ic1, ic2], tar[sths])
                 if _N.abs(pc) > 0.15:
                     print("ic %(ic)d    %(pc).3f  %(pv).3f" % {"pc" : pc, "pv" : pv, "ic" : ic})
 
@@ -1061,7 +1113,7 @@ print("..........   AI entropy")
 for star in ["AQ28scrs", "soc_skils", "imag", "rout", "switch", "fact_pat"]:
     exec("tar = %s" % star)
     print("!!!!!  %s" % star)
-    pc, pv = _ss.pearsonr(AIent1[ths], tar[sths])
+    pc, pv = _ss.pearsonr(AIent1[filtdat], tar[sths])
     #if _N.abs(pc) > 0.15:
     print("ic %(ic)d    %(pc).3f  %(pv).3f" % {"pc" : pc, "pv" : pv, "ic" : ic})
 
@@ -1073,7 +1125,7 @@ for ud in range(6):
     for star in ["AQ28scrs", "soc_skils", "imag", "rout", "switch", "fact_pat"]:
         exec("tar = %s" % star)
         print("!!!!!  %s" % star)
-        pc, pv = _ss.pearsonr(usd[ths], tar[sths])
+        pc, pv = _ss.pearsonr(usd[filtdat], tar[sths])
         if _N.abs(pc) > 0.15:
             print("ic %(ic)d    %(pc).3f  %(pv).3f" % {"pc" : pc, "pv" : pv, "ic" : ic})
     
@@ -1084,28 +1136,26 @@ for sud in ["isis", "isis_corr", "isis_cv", "isis_lv"]:
     for star in ["AQ28scrs", "soc_skils", "imag", "rout", "switch", "fact_pat"]:
         exec("tar = %s" % star)
         print("!!!!!  %s" % star)
-        pc, pv = _ss.pearsonr(ist_ud[ths], tar[sths])
+        pc, pv = _ss.pearsonr(ist_ud[filtdat], tar[sths])
         #if _N.abs(pc) > 0.15:
         print("%(pc).3f  %(pv).3f" % {"pc" : pc, "pv" : pv})
     
 ths = _N.where((AQ28scrs > 35))[0]            
-# """
+# 
 
-ths = _N.where((AQ28scrs > 35))[0]
-sths = _N.array(ths)
-#_N.random.shuffle(sths)
 
-for sud in ["FEAT1", "FEAT2", "FEAT3", "FEAT4", "FEAT5", "AIent1", "AIent2", "AIent3", "AIent4", "mn_diff_top2", "sd_diff_top2"]:
-    exec("ist_ud = %s" % sud)
-    for star in ["AQ28scrs", "soc_skils", "imag", "rout", "switch", "fact_pat"]:
-        exec("tar = %s" % star)
-        print("!!!!!  %s" % star)
-        pc, pv = _ss.pearsonr(ist_ud[ths], tar[sths])
-        if _N.abs(pc) > 0.18:
+for star in ["AQ28scrs", "soc_skils", "imag", "rout", "switch", "fact_pat"]:
+    exec("tar = %s" % star)
+    print("!!!!!  %s" % star)
+    for sud in ["FEAT1", "FEAT2", "FEAT3", "FEAT4", "FEAT5", "AIent1", "AIent2", "AIent3", "AIent4", "mn_diff_top2", "sd_diff_top2"]:
+#for sud in ["AIent1", "AIent2", "AIent3", "AIent4"]:#, "mn_diff_top2", "sd_diff_top2"]:
+        exec("ist_ud = %s" % sud)
+        pc, pv = _ss.pearsonr(ist_ud[filtdat], tar[sths])
+        if _N.abs(pc) > 0.08:
             print("%(ft)s    %(pc).3f  %(pv).3f" % {"pc" : pc, "pv" : pv, "ft" : sud})
-            fig = _plt.figure()
-            _plt.suptitle("%(ft)s  %(tar)s    %(pc).3f  %(pv).3f" % {"pc" : pc, "pv" : pv, "ft" : sud, "tar" : star})
-            _plt.scatter(ist_ud[ths], tar[sths])
+            #fig = _plt.figure()
+            #_plt.suptitle("%(ft)s  %(tar)s    %(pc).3f  %(pv).3f" % {"pc" : pc, "pv" : pv, "ft" : sud, "tar" : star})
+            #_plt.scatter(ist_ud[filtdat], tar[sths])
 
 for sud in ["mnFt1", "mnFt2", "mnFt3", "mnFt4", "mnFt5", "mnFt6", "mnFt7", "mnFt8", "sdFt1", "sdFt2", "sdFt3", "sdFt4", "sdFt5", "sdFt6", "sdFt7", "sdFt8"]:
     for cmp in range(3):
@@ -1114,9 +1164,25 @@ for sud in ["mnFt1", "mnFt2", "mnFt3", "mnFt4", "mnFt5", "mnFt6", "mnFt7", "mnFt
         for star in ["AQ28scrs", "soc_skils", "imag", "rout", "switch", "fact_pat"]:
             exec("tar = %s" % star)
             print("!!!!!  %s" % star)
-            pc, pv = _ss.pearsonr(ist_ud[ths], tar[sths])
+            pc, pv = _ss.pearsonr(ist_ud[filtdat], tar[sths])
             if _N.abs(pc) > 0.18:
                 print("%(ft)s    %(pc).3f  %(pv).3f" % {"pc" : pc, "pv" : pv, "ft" : sud})
                 fig = _plt.figure()
                 _plt.suptitle("%(ft)s  %(tar)s    %(pc).3f  %(pv).3f" % {"pc" : pc, "pv" : pv, "ft" : sud, "tar" : star})
-                _plt.scatter(ist_ud[ths], tar[sths])
+                _plt.scatter(ist_ud[filtdat], tar[sths])
+"""
+
+print("..........  sk of components")
+#sum
+sths = filtdat
+for mdl in ["DSUWTL"]:
+    exec("model = sum_skew_%s" % mdl)
+    print("----------------   %s" % mdl)
+    for star in ["AQ28scrs", "soc_skils", "imag", "rout", "switch", "fact_pat"]:
+        exec("tar = %s" % star)
+        print("!!!!!  %s" % star)
+        for ic1 in range(3):
+            for ic2 in range(3):        
+                pc, pv = _ss.pearsonr(model[filtdat, ic1, ic2], tar[sths])
+                if _N.abs(pc) > 0.15:
+                    print("%(ic1)d  %(ic2)d    %(pc).3f  %(pv).3f" % {"pc" : pc, "pv" : pv, "ic1" : ic1, "ic2" : ic2})

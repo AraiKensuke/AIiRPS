@@ -28,7 +28,7 @@ zipped_dir = "/Users/arai/Sites/taisen/DATA/%s" % expt
 
 #dates      = ["20210723"]
 
-dates = _rt.date_range(start='7/13/2021', end='11/30/2021')
+dates = _rt.date_range(start='7/13/2021', end='12/30/2022')
 if (expt == "TMB1"):
     if old_TMB1:
         dates = _rt.date_range(start='7/13/2021', end='8/17/2021')
