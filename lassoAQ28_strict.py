@@ -18,6 +18,7 @@ from statsmodels.stats.outliers_influence import variance_inflation_factor
 import sklearn.preprocessing as _skp
 import pickle
 import cv_funcs as cvf
+import os
 
 #------------------ SOCIAL SKILLS     [0, 1, 2, 3, 4, 5, 6]
 #0   1C  "I prefer to do things with others rather than on my own.",
@@ -103,6 +104,10 @@ win_type = 2  #  window is of fixed number of games that meet condition
 win     = 3
 smth    = 1
 
+outdir = "Results_%(wt)d%(w)d%(s)d" % {"wt" : win_type, "w" : win, "s" : smth}
+if not os.access(outdir, os.F_OK):
+    os.mkdir(outdir)
+
 lm = depickle("predictAQ28dat/AQ28_vs_RPS_1_%(wt)d%(w)d%(s)d.dmp" % {"wt" : win_type, "w" : win, "s" : smth})
 
 AQ28scores = ["AQ28scrs", "soc_skils", "imag", "rout", "switch", "fact_pat"]
@@ -164,11 +169,19 @@ for ca in cmp_againsts:
     if ca[0:7] == "entropy":
         exec("temp = unskew(temp)")
     exec("%(ca)s_s = standardize(temp)" % {"ca" : ca})
-    print("%(ca)s" % {"ca" : ca})
+    #print("%(ca)s" % {"ca" : ca})
     #cmp_againsts.append("%(ca)s" % {"ca" : ca})
-    
+
+filtdat = lm["filtdat"]
+filtdat_sh = _N.array(filtdat)
+_N.random.shuffle(filtdat_sh)
 for scrs in AQ28scores:
     exec("%(f)s = lm[\"%(f)s\"]" % {"f" : scrs})
+    exec("%(f)s_sh = _N.array(%(f)s)" % {"f" : scrs})    
+    exec("%(f)s_sh[filtdat] = %(f)s[filtdat_sh]" % {"f" : scrs})    
+
+print("Using %(fd)d of %(all)d participants" % {"fd" : len(filtdat), "all" : AQ28scrs.shape[0]})
+
 
 ##  using custom list of answers
 for scrs in AQ28scores[1:]:   #  raw answers data
@@ -182,73 +195,144 @@ for scrs in AQ28scores[1:]:   #  raw answers data
 #soc_skils = _N.sum(ans_soc_skils[:, soc_skils_use], axis=1)
     
 ####################  USE ALL DATA
-filtdat = _N.arange(AQ28scrs.shape[0])
 ####################  OUR DATA HAS 1 very strong outlier - 1 person with 
 ####################  AQ-28 score of 30 or so.  Next closest person has 
 ####################  score of 42 (or so).  
 ####################  using these 
 #filtdat = _N.where((AQ28scrs > 35) & (rout > 4))[0]
 #filtdat = _N.where((AQ28scrs > 35))[0]
-filtdat = lm["filtdat"]
-print("Using %(fd)d of %(all)d participants" % {"fd" : len(filtdat), "all" : AQ28scrs.shape[0]})
 
 #starget = ""
 
-#for starget in ["AQ28scrs", "soc_skils", "imag", "rout", "switch", "fact_pat"]:
-for starget in ["AQ28scrs"]:
-    X_all_feats            = _N.empty((len(filtdat), len(cmp_againsts)))
 
-    cand_feats = []
-    exec("target = %s" % starget)
 
-    y    = target[filtdat]
-    #_N.random.shuffle(y)
-    iaf = -1
-    for af in cmp_againsts:
-        iaf += 1
-        exec("feat = %s_s" % af)
-        X_all_feats[:, iaf] = feat[filtdat]
+for shuffle in [False]:#, True]:
+    for pcthresh in [0.08, 0.1, 0.12]:
+        sshf     = ""
+        if shuffle:
+            sshf = "_sh"
+        for starget in ["AQ28scrs", "soc_skils", "imag", "rout", "switch", "fact_pat"]:
+        #for starget in ["AQ28scrs"]:
+            X_all_feats            = _N.empty((len(filtdat), len(cmp_againsts)))
 
-    for i in range(X_all_feats.shape[1]):
-        pc, pv = _ss.pearsonr(y, X_all_feats[:, i])
-        if _N.abs(pc) > 0.08:
-            cand_feats.append(i)
-            print("%(f)s   %(pc).3f  %(pv).3f" % {"pc" : pc, "pv" : pv, "f" : cmp_againsts[i]})
-    v_cand_feats = _N.array(cand_feats)
+            cand_feats = []
 
-    # REPS = 20
-    # scrs = _N.empty(REPS*4)
+            if shuffle:
+                exec("target = %s_sh" % starget)
+            else:
+                exec("target = %s" % starget)                
+            y    = target[filtdat]
 
-    outer_flds = 4
-    inner_flds = 4
-    outer_REPS = 25
-    inner_REPS = 5
+            iaf = -1
+            for af in cmp_againsts:
+                iaf += 1
+                exec("feat = %s_s" % af)
+                X_all_feats[:, iaf] = feat[filtdat]
 
-    X_cand_feats = _N.array(X_all_feats[:, v_cand_feats])
-    # rkf = RepeatedKFold(n_splits=outer_flds, n_repeats=REPS)#, random_state=0)
-    # rkfINNER = RepeatedKFold(n_splits=inner_flds, n_repeats=4)#, random_state=0)
+            for i in range(X_all_feats.shape[1]):
+                pc, pv = _ss.pearsonr(y, X_all_feats[:, i])
+                if _N.abs(pc) > pcthresh:
+                    cand_feats.append(i)
+                #    print("%(f)s   %(pc).3f  %(pv).3f" % {"pc" : pc, "pv" : pv, "f" : cmp_againsts[i]})
+            v_cand_feats = _N.array(cand_feats)
 
-    # iii = -1
+            # REPS = 20
+            # scrs = _N.empty(REPS*4)
 
-    # ichosen = _N.zeros(len(cmp_againsts), dtype=_N.int)
-    # reg_coefs = _N.empty((outer_flds*REPS, len(cmp_againsts)))
-    # for train, test in rkf.split(datinds):
-    #     iii += 1
-    #     ####  first, pick alpha using LassoCV
-    #     train_data_inds = _N.arange(len(train))
-    #     splits = rkfINNER.split(train_data_inds)
-    #     reg = LassoCV(cv=splits, max_iter=100000).fit(X_all_feats[train], y[train])
+            outer_flds = 4
+            inner_flds = 4
+            outer_REPS = 50
+            inner_REPS = 20
 
-    #     #reg = LassoCV(cv=4, max_iter=100000).fit(X_all_feats[train], y[train])
+            X_cand_feats = _N.array(X_all_feats[:, v_cand_feats])
+            # rkf = RepeatedKFold(n_splits=outer_flds, n_repeats=REPS)#, random_state=0)
+            # rkfINNER = RepeatedKFold(n_splits=inner_flds, n_repeats=4)#, random_state=0)
 
-    #     maxWeight = _N.max(_N.abs(reg.coef_))
-    #     reg_coefs[iii] = reg.coef_
+            # iii = -1
 
-    weights, feat_inv_cv, inner_scores, tar_prd_pcs, pcpvs = cvf.pickFeaturesTwoCVs(X_cand_feats, y, outer_flds=outer_flds, inner_flds=inner_flds, outer_REPS=outer_REPS, innter_REPS=inner_REPS)
+            # ichosen = _N.zeros(len(cmp_againsts), dtype=_N.int)
+            # reg_coefs = _N.empty((outer_flds*REPS, len(cmp_againsts)))
+            # for train, test in rkf.split(datinds):
+            #     iii += 1
+            #     ####  first, pick alpha using LassoCV
+            #     train_data_inds = _N.arange(len(train))
+            #     splits = rkfINNER.split(train_data_inds)
+            #     reg = LassoCV(cv=splits, max_iter=100000).fit(X_all_feats[train], y[train])
 
-    print("------------   %s" % starget)
-    print(feat_inv_cv)
+            #     #reg = LassoCV(cv=4, max_iter=100000).fit(X_all_feats[train], y[train])
 
-ReliableFeats = v_cand_feats[_N.where(feat_inv_cv > 1.25)[0]]
-for rf in ReliableFeats:
-    print(cmp_againsts[rf])
+            #     maxWeight = _N.max(_N.abs(reg.coef_))
+            #     reg_coefs[iii] = reg.coef_
+
+            weights, feat_inv_cv, inner_scores, tar_prd_pcs, pcpvs = cvf.pickFeaturesTwoCVs(X_cand_feats, y, outer_flds=outer_flds, inner_flds=inner_flds, outer_REPS=outer_REPS, innter_REPS=inner_REPS)
+
+            print("------------   %s" % starget)
+            print(feat_inv_cv)
+
+            fig = _plt.figure(figsize=(8, 11))
+            #fig.add_subplot(3, 1, 1)
+            _plt.subplot2grid((3, 6), (0, 0), colspan=5)
+            nonzero_weights = _N.zeros(weights.shape[1], dtype=_N.int)
+
+            for icv in range(weights.shape[0]):
+                nonzero = _N.where(weights[icv] != 0)[0]
+                nonzero_weights[nonzero] += 1
+
+            reliable_thr = int(0.9*(outer_flds * outer_REPS))
+            i_reliable_cands = _N.where(nonzero_weights >= reliable_thr)[0]
+            i_unreliable_cands = _N.where(nonzero_weights < reliable_thr)[0]
+
+            for icv in range(weights.shape[0]):
+                _plt.scatter(i_reliable_cands + _N.random.randn(len(i_reliable_cands)) * 0.1, weights[icv, i_reliable_cands], s=3, color="black")
+                _plt.scatter(i_unreliable_cands + _N.random.randn(len(i_unreliable_cands)) * 0.1, weights[icv, i_unreliable_cands], s=3, color="grey")            
+
+            abv_0 = len(_N.where(inner_scores > 0)[0])
+            _plt.xlabel("feature #")
+            _plt.ylabel("weights")
+
+            _plt.subplot2grid((3, 6), (0, 5), colspan=1)
+            _plt.scatter(_N.random.randn(outer_REPS*outer_flds), inner_scores, s=3, color="black")
+            _plt.axhline(y=0, ls=":", color="grey")
+            _plt.title("CD")
+            _plt.ylabel("coeff determination")
+            _plt.xlim(-8, 8)
+            _plt.ylim(-1, 1)
+
+            _plt.subplot2grid((3, 6), (1, 0), colspan=6)
+            _plt.hist(nonzero_weights / (outer_flds * outer_REPS), bins=_N.linspace(-0.005, 1.005, 102))
+
+            _plt.suptitle("tar: %(tar)s    feat_pcth: %(pcth).2f   CD abv 0: %(az)d/%(R)d   median: %(md).2f" % {"az" : abv_0, "md" : _N.median(inner_scores), "pcth" : pcthresh, "tar" : starget, "R" : (outer_REPS*outer_flds)})
+
+            #  nonzero_weights is # of times for each feature LassoCV picked it (index of v_cand_feats)
+            reliable_feats = v_cand_feats[i_reliable_cands]
+
+            _plt.subplot2grid((3, 6), (2, 0), colspan=6)
+            _plt.title("reliable features")
+            _plt.ylim(0, 1000)
+            _plt.xlim(0, 1000)
+            _plt.xticks([])
+            _plt.yticks([])
+
+            more2print = False
+            col        = 0
+            fp = open("%(od)s/reliable_feats%(tar)s_%(th).2f" % {"tar" : starget, "od" : outdir, "th" : pcthresh}, "w")
+            for ir in range(len(reliable_feats)):
+                fp.write("%s\n" % cmp_againsts[reliable_feats[ir]])
+                more2print = True
+                if ir % 10 == 0:
+                    s = ""
+                s += "  %(times).2f   %(feat)s\n" % {"feat" : cmp_againsts[reliable_feats[ir]], "times" : (nonzero_weights[i_reliable_cands[ir]]) / (outer_REPS * outer_flds)}
+                if ir % 10 == 9:
+                    _plt.text(col*500+10, 10, s)
+                    col += 1
+                    more2print = False
+            fp.close()
+            if more2print:
+                _plt.text(col*500+10, 10, s)
+
+            fig.subplots_adjust(wspace=0.8)
+
+            _plt.savefig("%(od)s/lassoAQ28_%(tar)s_%(pcth).2f%(sh)s.png" % {"tar" : starget, "pcth" : pcthresh, "sh" : sshf, "od" : outdir})
+
+
+

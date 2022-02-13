@@ -37,7 +37,7 @@ class perceptron:
         prev_m is previous player move.  
         """
         prev_m  = int(prev_pair[1])
-        print("...................In predict  player:   %(1)d" % {"1" : prev_pair[1]})
+        #print("...................In predict  player:   %(1)d" % {"1" : prev_m})
         N  = self.N
         x  = self.x
         #  x[0] is R0
@@ -49,13 +49,13 @@ class perceptron:
         
         w  = self.w
         v  = self.v
-        print("old x")
-        print(x)
+        #print("old x")
+        #print(x)
         
         #  
         
-        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-        print(w)
+        #print("!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        #print(w)
         #  m is previous player move.  (last game)
         #  x is past data, w is weights, v is prediction to be compared w/ user
         #  we return 1, 2 or 3
@@ -103,8 +103,8 @@ class perceptron:
         for i in range(3*N-3):
             x[3*N-1-i] = x[3*N-4-i]
         x[0:3] = HUM_hand_bin[0:3]
-        print("new x")
-        print(x)
+        #print("new x")
+        #print(x)
 
         #  calculate perceptron output for each perceptron
         for k in range(3):
@@ -118,8 +118,8 @@ class perceptron:
             if v[k] >= vmax:
                 vmax = v[k] 
                 kmax = k
-        print("****************************")
-        print(w)
+        #print("****************************")
+        #print(w)
 
         #  this prediction will be compared with player's hand 
         #  received after this function returns, 

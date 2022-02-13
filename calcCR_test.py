@@ -14,7 +14,7 @@ import AIiRPS.simulation.simulate_prcptrn as sim_prc
 
 win_type = 1   #  window is of fixed number of games
 win_type = 2  #  window is of fixed number of games that meet condition 
-wins= 4
+wins= 5
 gk_w = 1
 
 visit = 1

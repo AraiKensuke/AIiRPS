@@ -254,10 +254,14 @@ def get_ME_RPS(hnd_dat, tr0, tr1):
      return R_R, P_R, S_R, R_P, P_P, S_P, R_S, P_S, S_S, R_cond, P_cond, S_cond
 """
 
-def write_hnd_dat(hnd_dat, fn):
-    global simulation_data_dir, data_dir
-    fp = open("%(dd)s/rpsm_%{fn}s.dat" % {"dd" : data_dir, "fn" : fn}, "w")
+def write_hnd_dat(hnd_dat, data_dir, fn):
+    #global simulation_data_dir, data_dir
+    fp = open("%(dd)s/rpsm_%(fn)s.dat" % {"dd" : data_dir, "fn" : fn}, "w")
     fp.write("#  player hands, AI hands, mv times, inp method, ini_weight, fin_weights, paced_or_free, AI_or_RNG\n")
+    fp.write("Notzilla/5.0\n")
+    fp.write("01Jan01-0000-00\n")
+    fp.write("01Jan01-0000-01\n")
+    fp.write("Perceptron(2)\n")    
     dat_strng = str(hnd_dat[:, 0]).replace("\n", "")
     fp.write("%s\n" % dat_strng[1:-1])
     dat_strng = str(hnd_dat[:, 1]).replace("\n", "")
@@ -699,3 +703,30 @@ def Demo(demo_fn):
         Eng = 0
 
     return age, gen, Eng
+
+def repeated_keys(hnd_dat):
+    """
+    return me 
+    """
+    longest_repeats = []
+    i = 0
+    L = hnd_dat.shape[0]
+    while i < L-1:
+        if hnd_dat[i, 0] == hnd_dat[i+1, 0]:  #  Found a repeat
+            j = i
+            keep_going = True
+            while (j < L-1) and keep_going:
+                if hnd_dat[j, 0] != hnd_dat[j+1, 0]:
+                    longest_repeats.append(j - i+1)
+                    keep_going = False
+                j += 1
+            if keep_going:  #  hit end of loop while a repeat
+                longest_repeats.append(j - i+1)                
+            i = j-1  #  j+1 is not equal
+        else:     #  Not a repeat
+            longest_repeats.append(1)
+        i += 1
+    if hnd_dat[L-2, 0] != hnd_dat[L-1, 0]:   #  last 2 are not repeats
+        longest_repeats.append(1)
+
+    return longest_repeats

@@ -35,101 +35,119 @@ _ME_RPS = 1
 _SHFL_KEEP_CONT  = 0
 _SHFL_NO_KEEP_CONT  = 1
 
-def standardize(y):
-    ys = y - _N.mean(y)
-    ys /= _N.std(ys)
-    return ys
-
 def depickle(s):
     import pickle
     with open(s, "rb") as f:
         lm = pickle.load(f)
     return lm
 
-def unskew(dat):
-    sk = _N.empty(15)
-    im = -1
-    ms = _N.linspace(0.01, 1.1, 15)
-    for m in ms:
-        im += 1
-        sk[im] = _ss.skew(_N.exp(dat / (m*_N.mean(dat))))
-    min_im = _N.where(_N.abs(sk) == _N.min(_N.abs(sk)))[0][0]
-    return _N.exp(dat / (ms[min_im]*_N.mean(dat)))
- 
 id = 0
 
-lm1 = depickle("predictAQ28dat/AQ28_vs_RPS_1.dmp")
-lm2 = depickle("predictAQ28dat/AQ28_vs_RPS_2.dmp")
+win_type = 2   #  window is of fixed number of games
+#win_type = 1  #  window is of fixed number of games that meet condition 
+win     = 3
+#win     = 4
+smth    = 1
+#smth    = 3
+
+win_type = 2  #  window is of fixed number of games that meet condition 
+win     = 3
+smth    = 1
+
+outdir = "Results_%(wt)d%(w)d%(s)d" % {"wt" : win_type, "w" : win, "s" : smth}
+
+lm1 = depickle("predictAQ28dat/AQ28_vs_RPS_1_%(wt)d%(w)d%(s)d.dmp" % {"wt" : win_type, "w" : win, "s" : smth})
+lm2 = depickle("predictAQ28dat/AQ28_vs_RPS_2_%(wt)d%(w)d%(s)d.dmp" % {"wt" : win_type, "w" : win, "s" : smth})
 
 features_cab1 = lm1["features_cab1"]
 features_cab2 = lm1["features_cab2"]
 features_AI   = lm1["features_AI"]
 features_stat = lm1["features_stat"]
 
-ifeatinds_soc_skils = _N.loadtxt("use_features_soc_skils", dtype=_N.int)
-ifeatinds_imag = _N.loadtxt("use_features_imag", dtype=_N.int)
-ifeatinds_rout = _N.loadtxt("use_features_rout", dtype=_N.int)
-ifeatinds_switch = _N.loadtxt("use_features_switch", dtype=_N.int)
-ifeatinds_AQ28scrs = _N.loadtxt("use_features_AQ28scrs", dtype=_N.int)
+# ifeatinds_soc_skils = _N.loadtxt("use_features_soc_skils", dtype=_N.int)
+# ifeatinds_imag = _N.loadtxt("use_features_imag", dtype=_N.int)
+# ifeatinds_rout = _N.loadtxt("use_features_rout", dtype=_N.int)
+# ifeatinds_switch = _N.loadtxt("use_features_switch", dtype=_N.int)
+# ifeatinds_AQ28scrs = _N.loadtxt("use_features_AQ28scrs", dtype=_N.int)
 
-indlist = _N.sort(_N.unique(ifeatinds_soc_skils.tolist() + ifeatinds_imag.tolist() + ifeatinds_rout.tolist() + ifeatinds_switch.tolist() + ifeatinds_AQ28scrs.tolist()))
+#indlist = _N.sort(_N.unique(ifeatinds_soc_skils.tolist() + ifeatinds_imag.tolist() + ifeatinds_rout.tolist() + ifeatinds_switch.tolist() + ifeatinds_AQ28scrs.tolist()))
 
-cmp_againsts = features_cab1 + features_cab2 + features_AI + features_stat
-
-for ca in cmp_againsts:
-    for v in range(1, 3):
-        exec("temp = lm%(v)d[\"%(ca)s\"]" % {"ca" : ca, "v" : v})
-        exec("%(ca)s%(v)d = lm%(v)d[\"%(ca)s\"]" % {"ca" : ca, "v" : v})    
-        if ca[0:7] == "entropy":
-            exec("temp = unskew(temp)" % {"ca" : ca, "v" : v})
-        print(ca)
-        exec("%(ca)s%(v)d = standardize(temp)" % {"ca" : ca, "v" : v})
-
+cmp_againsts = lm1["cmp_againsts_name"]#features_cab1 + features_cab2 + features_AI + features_stat
+indlist = _N.arange(len(cmp_againsts))
 
 pcpvs = _N.empty((len(cmp_againsts), 2))
 
 all_im = 0
 
 all_features = _N.empty((len(cmp_againsts), len(lm1["AQ28scrs"]), 2))
-for scalm in ["features_cab1", "features_cab2", "features_AI", "features_stat", ]:
+for scalm in ["cmp_againsts_name"]:#["features_cab1", "features_cab2", "features_AI", "features_stat", ]:
     calm = lm1[scalm]
+    #print(calm)
     im = 0
     all_im_cat = 0    
 
     for ca in calm:
         if im % 30 == 0:
             fig = _plt.figure(figsize=(13, 13))
-            _plt.suptitle(scalm)
+            fig.subplots_adjust(hspace=0.95, bottom=0.08, left=0.08, right=0.95)
+            
+            _plt.suptitle(scalm, fontsize=10)
             im = 0
-        exec("mark_v1 = %s1" % ca)
-        exec("mark_v2 = %s2" % ca)
+        exec("mark_v1 = lm1[\"%s\"]" % ca)
+        exec("mark_v2 = lm2[\"%s\"]" % ca)        
+
         all_features[all_im, :, 0] = mark_v1
         all_features[all_im, :, 1] = mark_v2
         im += 1
         all_im += 1
         all_im_cat += 1        
-#         ax = fig.add_subplot(5, 6, im)
+        ax = fig.add_subplot(5, 6, im)
 
-#         if len(_N.where(indlist == all_im-1)[0]) > 0:
-#             ax.set_facecolor("#CCCCCC")
-#         _plt.scatter(mark_v1, mark_v2, color="black", s=3)
-#         pc, pv = _ss.pearsonr(mark_v1, mark_v2)
-#         #pc, pv = _ss.spearmanr(mark_v1, mark_v2)
-#         _plt.xlabel("round 1")
-#         _plt.ylabel("round 2")
+        if len(_N.where(indlist == all_im-1)[0]) > 0:
+            ax.set_facecolor("#CCCCCC")
+        _plt.scatter(mark_v1, mark_v2, color="black", s=3)
+        pc, pv = _ss.pearsonr(mark_v1, mark_v2)
+        #pc, pv = _ss.spearmanr(mark_v1, mark_v2)
+        _plt.xlabel("round 1")
+        _plt.ylabel("round 2")
 
-#         pcpvs[all_im-1, 0] = pc
-#         pcpvs[all_im-1, 1] = pv
-#         marker = _N.array(mark_v1.tolist() + mark_v2.tolist())
-#         minM = _N.min(marker)
-#         maxM = _N.max(marker)
-#         A = maxM - minM
-#         _plt.plot([minM - 0.1*A, maxM + 0.1*A], [minM - 0.1*A, maxM + 0.1*A])
-#         _plt.title("%(pc).3f  %(nm)s" % {"pc" : pc, "nm" : calm[all_im_cat-1]})
+        pcpvs[all_im-1, 0] = pc
+        pcpvs[all_im-1, 1] = pv
+        marker = _N.array(mark_v1.tolist() + mark_v2.tolist())
+        minM = _N.min(marker)
+        maxM = _N.max(marker)
+        A = maxM - minM
+        _plt.plot([minM - 0.1*A, maxM + 0.1*A], [minM - 0.1*A, maxM + 0.1*A])
+        _plt.title("%(pc).2f  %(nm)s" % {"pc" : pc, "nm" : calm[all_im_cat-1]}, fontsize=9)
 
-#     fig.subplots_adjust(hspace=0.9, bottom=0.08, left=0.08, right=0.95)
-#     _plt.savefig("stability_%s" % scalm)
+    _plt.savefig("stability_%s" % scalm)
+    _plt.close()
 
+
+#unreliable = _N.where(pcpvs[:, 0] < 0)[0]
+#for unr in unreliable:
+#    print(cmp_againsts[unr])
+
+##############  look at the features used for prediction
+pcthresh=0.08
+for starget in ["soc_skils", "imag", "rout", "switch", "fact_pat", "AQ28scrs"]:
+    print("--------   target   %s" % starget)
+    fp = open("%(od)s/reliable_feats%(tar)s_%(th).2f" % {"tar" : starget, "od" : outdir, "th" : pcthresh}, "r")
+    lines = fp.readlines()
+    pcs = _N.empty(len(lines))
+    iln = -1
+    fig  = _plt.figure()
+    for ln in lines:
+        iln += 1
+        ind = cmp_againsts.index(ln.rstrip())
+        print("%(ca)s  %(pc).2f" % {"pc" : pcpvs[ind, 0], "ca" : ln.rstrip()})
+        pcs[iln] = pcpvs[ind, 0]
+    _plt.plot(pcs)
+    _plt.ylim(-1, 1)
+    _plt.axhline(y=0, ls=":")
+    print("mean:   %.2f" % _N.mean(pcs))
+
+    
 # fig = _plt.figure(figsize=(7, 3))
 # _plt.scatter(_N.arange(pcpvs.shape[0]), pcpvs[:, 0], color="black", s=7)
 # _plt.scatter(indlist, pcpvs[indlist, 0], color="red", s=20)
@@ -215,26 +233,26 @@ _plt.savefig("retest", transparent=True)
 # switch
 # AQ28scrs
 
-fig = _plt.figure(figsize=(4, 10))
-ti = 0
-for tar in ["soc_skils", "imag", "rout", "switch", "AQ28scrs"]:
-    ti += 1
-    ax = fig.add_subplot(5, 1, ti)
-    ax.set_aspect("equal")
+# fig = _plt.figure(figsize=(4, 10))
+# ti = 0
+# for tar in ["soc_skils", "imag", "rout", "switch", "AQ28scrs"]:
+#     ti += 1
+#     ax = fig.add_subplot(5, 1, ti)
+#     ax.set_aspect("equal")
     
-    lm = depickle("LRfit%s.dmp" % tar)
-    ifeats = lm["features_thresh3_fld4"]
-    iwgts  = lm["weights_thresh3_fld4"]
+#     lm = depickle("LRfit%s.dmp" % tar)
+#     ifeats = lm["features_thresh3_fld4"]
+#     iwgts  = lm["weights_thresh3_fld4"]
     
-    wgtsr = iwgts.reshape((len(iwgts), 1, 1))
-    v = _N.sum(all_features[ifeats]*wgtsr, axis=0)
-    xymin = _N.min(v)
-    xymax = _N.max(v)
-    amp   = xymax - xymin
-    _plt.xlim(xymin-0.1*amp, xymax+0.1*amp)
-    _plt.ylim(xymin-0.1*amp, xymax+0.1*amp)
-    _plt.plot([xymin, xymax], [xymin, xymax])
-    pc, pv = _ss.pearsonr(v[:, 0], v[:, 1])
+#     wgtsr = iwgts.reshape((len(iwgts), 1, 1))
+#     v = _N.sum(all_features[ifeats]*wgtsr, axis=0)
+#     xymin = _N.min(v)
+#     xymax = _N.max(v)
+#     amp   = xymax - xymin
+#     _plt.xlim(xymin-0.1*amp, xymax+0.1*amp)
+#     _plt.ylim(xymin-0.1*amp, xymax+0.1*amp)
+#     _plt.plot([xymin, xymax], [xymin, xymax])
+#     pc, pv = _ss.pearsonr(v[:, 0], v[:, 1])
 
-    _plt.title(pc)
-    _plt.scatter(v[:, 0], v[:, 1])
+#     _plt.title(pc)
+#     _plt.scatter(v[:, 0], v[:, 1])

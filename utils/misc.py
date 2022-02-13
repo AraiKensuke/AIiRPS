@@ -1,3 +1,5 @@
+import numpy as _N
+
 def gauKer(w):
     """
     1-D gaussian kernel.  Use with numpy.convolve

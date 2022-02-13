@@ -247,28 +247,28 @@ def cntrmvs_DSUWTL(prob_mvs, TO):
         #     hghst_probs[ibf+1:ibf+4] = hghst_probs[ibf]
         
         for ig in range(5, TO-5-5):
-            if True:
-                ############################################
-                if (hghst_prob_actions[ig] == 1) and (hghst_prob_actions[ig+1] == 0):
-                    #  went from STAY to DN  (counter)
-                    cntr += 1
-                elif (hghst_prob_actions[ig] == 1) and (hghst_prob_actions[ig+1] == 2):
-                    #  went from STAY to UP  (not counter)
-                    n_cntr += 1
-                ############################################                    
-                if (hghst_prob_actions[ig] == 2) and (hghst_prob_actions[ig+1] == 1):
-                    #  went from UP to STAY
-                    cntr += 1
-                elif (hghst_prob_actions[ig] == 2) and (hghst_prob_actions[ig+1] == 0):
-                    #  went from UP to DN
-                    n_cntr += 1
-                ############################################                    
-                if (hghst_prob_actions[ig] == 0) and (hghst_prob_actions[ig+1] == 2):
-                    #  went from DN to UP
-                    cntr += 1
-                elif (hghst_prob_actions[ig] == 0) and (hghst_prob_actions[ig+1] == 1):
-                    #  went from DN to STAY
-                    n_cntr += 1
+            ############################################
+            #if (hghst_prob_actions[ig] == 1) and (hghst_prob_actions[ig+1] == 0):
+            if (hghst_prob_actions[ig] == 1) and (hghst_prob_actions[ig+1] == 0):
+                #  went from STAY to DN  (counter)
+                cntr += 1
+            elif (hghst_prob_actions[ig] == 1) and (hghst_prob_actions[ig+1] == 2):
+                #  went from STAY to UP  (not counter)
+                n_cntr += 1
+            ############################################                    
+            if (hghst_prob_actions[ig] == 2) and (hghst_prob_actions[ig+1] == 1):
+                #  went from UP to STAY
+                cntr += 1
+            elif (hghst_prob_actions[ig] == 2) and (hghst_prob_actions[ig+1] == 0):
+                #  went from UP to DN
+                n_cntr += 1
+            ############################################                    
+            if (hghst_prob_actions[ig] == 0) and (hghst_prob_actions[ig+1] == 2):
+                #  went from DN to UP
+                cntr += 1
+            elif (hghst_prob_actions[ig] == 0) and (hghst_prob_actions[ig+1] == 1):
+                #  went from DN to STAY
+                n_cntr += 1
                     
     l = _N.unique(_N.array(maxp_chg_times_wtl)).tolist()
     i = len(l)-2
@@ -699,6 +699,12 @@ def perceptron_features(all_AI_weights, all_AI_preds, partIDs):
     aift4 = _N.std(_N.diff(_N.std(aAw, axis=1), axis=3), axis=1) # poor reproduce
     aift5 = _N.std(_N.diff(_N.std(aAw, axis=3), axis=3), axis=1) # poor reproduce
     aift6 = _N.std(_N.diff(_N.mean(aAw, axis=3), axis=3), axis=1) # poor reproduce    
+    aift7 = _N.mean(_N.diff(_N.mean(aAw, axis=1), axis=3), axis=2) # poor reproduce
+    aift8 = _N.mean(_N.diff(_N.std(aAw, axis=1), axis=3), axis=2) # poor reproduce
+    aift9 = _N.std(_N.diff(_N.mean(aAw, axis=1), axis=3), axis=2) # poor reproduce            
+    aift10 = _N.std(_N.diff(_N.std(aAw, axis=1), axis=3), axis=2) # poor reproduce
+    aift11 = _N.std(_N.diff(_N.std(aAw, axis=3), axis=3), axis=2) # poor reproduce
+    aift12 = _N.std(_N.diff(_N.mean(aAw, axis=3), axis=3), axis=2) # poor reproduce    
 
     #  the last axis has 2 values (N=2)
     diffAIw = _N.diff(aAw, axis=4).reshape(aAw.shape[0], aAw.shape[1], aAw.shape[2], aAw.shape[3])         #  len(partIDs) x (T+1) x 3 x 3
@@ -838,4 +844,4 @@ def perceptron_features(all_AI_weights, all_AI_preds, partIDs):
     mn_diff_top2 = _N.std(diff_top2, axis=1) / _N.mean(diff_top2, axis=1) 
     sd_diff_top2 = 1./_N.std(diff_top2, axis=1)
 
-    return FEAT1, FEAT2, FEAT3, FEAT4, FEAT5, FEAT6, AIent1, AIent2, AIent3, AIent4, AIent5, AIent6, AIent7, AIent8, mn_diff_top2, sd_diff_top2, mnFt1, mnFt2, mnFt3, mnFt4, mnFt5, mnFt6, mnFt7, mnFt8, sdFt1, sdFt2, sdFt3, sdFt4, sdFt5, sdFt6, sdFt7, sdFt8, aift1[:, :, 0], aift2[:, :, 0], aift3[:, :, 0], aift4[:, :, 0], aift5[:, :, 0], aift6[:, :, 0]
+    return FEAT1, FEAT2, FEAT3, FEAT4, FEAT5, FEAT6, AIent1, AIent2, AIent3, AIent4, AIent5, AIent6, AIent7, AIent8, mn_diff_top2, sd_diff_top2, mnFt1, mnFt2, mnFt3, mnFt4, mnFt5, mnFt6, mnFt7, mnFt8, sdFt1, sdFt2, sdFt3, sdFt4, sdFt5, sdFt6, sdFt7, sdFt8, aift1[:, :, 0], aift2[:, :, 0], aift3[:, :, 0], aift4[:, :, 0], aift5[:, :, 0], aift6[:, :, 0], aift7[:, :, 0], aift8[:, :, 0], aift9[:, :, 0], aift10[:, :, 0], aift11[:, :, 0], aift12[:, :, 0]

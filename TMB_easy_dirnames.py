@@ -68,7 +68,6 @@ for date in dates:
                 mn = 0
                 hr += 1
 
-
 #  now go to read_taisen.py
 if expt == "TMB1":
     fns, dats, cnstrctrs = _rt.filterRPSdats(expt, dates, visits=[1], domainQ=_rt._TRUE_AND_FALSE_, demographic=_rt._TRUE_AND_FALSE_, mentalState=_rt._TRUE_AND_FALSE_, minIGI=20, maxIGI=90000, MinWinLossRat=0, has_useragent=True, has_start_and_end_times=True, has_constructor=True, blocks=4)
