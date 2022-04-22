@@ -110,17 +110,17 @@ def return_hnd_dat(day_time, tr0=0, tr1=None, know_gt=False, flip_human_AI=False
         iDataOffset += 1    
 
     if flip_human_AI:
-        human_hands   = _N.array(re.split(" +", rec_per_hands), dtype=_N.int)
-        per_hands     = _N.array(re.split(" +", rec_hands), dtype=_N.int)
+        human_hands   = _N.array(re.split(" +", rec_per_hands), dtype=int)
+        per_hands     = _N.array(re.split(" +", rec_hands), dtype=int)
     else:
-        human_hands   = _N.array(re.split(" +", rec_hands), dtype=_N.int)
-        per_hands     = _N.array(re.split(" +", rec_per_hands), dtype=_N.int)
-    reaction_times = _N.array(re.split(" +", rec_reaction_times), dtype=_N.int)
+        human_hands   = _N.array(re.split(" +", rec_hands), dtype=int)
+        per_hands     = _N.array(re.split(" +", rec_per_hands), dtype=int)
+    reaction_times = _N.array(re.split(" +", rec_reaction_times), dtype=int)
     #  First reaction_time is time from page load to 1st player response
 
     N             = human_hands.shape[0]
-    hnd_dat = _N.empty((N, 4), dtype=_N.int)
-    wtl           = _N.empty(N, dtype=_N.int)
+    hnd_dat = _N.empty((N, 4), dtype=int)
+    wtl           = _N.empty(N, dtype=int)
 
     tr0     = 0 if tr0 is None else tr0
     tr1     = N if tr1 is None else tr1
@@ -312,10 +312,10 @@ def filterRPSdats(expt, dates, visits=[1], domainQ=_TRUE_AND_FALSE_, demographic
                     inclDemo = False
                     inclDom  = False
                     allblocks= False
-                    igiCondMet = _N.ones(blocks, dtype=_N.int)
-                    all_igiCondMet = _N.zeros(blocks, dtype=_N.int)
-                    winCondMet = _N.ones(blocks, dtype=_N.int)      
-                    ngameCondMet = _N.ones(blocks, dtype=_N.int)      
+                    igiCondMet = _N.ones(blocks, dtype=int)
+                    all_igiCondMet = _N.zeros(blocks, dtype=int)
+                    winCondMet = _N.ones(blocks, dtype=int)      
+                    ngameCondMet = _N.ones(blocks, dtype=int)      
 
                     fn_for_block = [] # [dat-tm, dat-tm, dat-tm, dat-tm]
                     dat_for_block = []
