@@ -45,6 +45,10 @@ def return_hnd_dat(day_time, tr0=0, tr1=None, know_gt=False, flip_human_AI=False
         s = "%s/*.dat" % look_in_dir
     else:
         s = "%(lid)s/%(v)d/*.dat" % {"lid" : look_in_dir, "v" : visit}
+    if know_gt:
+        import pickle
+        with open("%s/block1_AI.dmp" % look_in_dir, "rb") as f:
+            gt_dmp = pickle.load(f)
 
     dat_files = glob.glob(s)
     #
@@ -155,9 +159,9 @@ def return_hnd_dat(day_time, tr0=0, tr1=None, know_gt=False, flip_human_AI=False
     hnd_dat[:, 2] = wtl
     #hnd_dat[:, 3] = 0
     if expt != "TMB1":
-        return hnd_dat, start, end, UA, cnstr, rec_input_method, rec_ini_percep, rec_fin_percep
+        return hnd_dat, start, end, UA, cnstr, rec_input_method, rec_ini_percep, rec_fin_percep, gt_dmp
     else:
-        return hnd_dat, start, end, UA, cnstr, rec_input_method, None, None
+        return hnd_dat, start, end, UA, cnstr, rec_input_method, None, None, None
 
 
 def get_consecutive_conditioned_hands(clpd_hnd_dat, h1_1=0, h0_1=0, h1_2=0, h0_2=0, h1_3=0, h0_3=0, conditional_col=2, wtl_rps=None):
