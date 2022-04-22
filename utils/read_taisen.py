@@ -3,6 +3,7 @@ import re
 import os
 import glob
 import pandas as pd
+import AIiRPS.utils.misc as misc
 
 _TRUE_ONLY_  = 0
 _FALSE_ONLY_ = 1
@@ -100,7 +101,7 @@ def return_hnd_dat(day_time, tr0=0, tr1=None, know_gt=False, flip_human_AI=False
     iDataOffset += 1
     rec_input_method = lines[iDataOffset].rstrip()
     iDataOffset += 1
-    what_is_this = lines[iDataOffset].rstrip()
+    AI_arch = lines[iDataOffset].rstrip()
     iDataOffset += 1
     if expt != "TMB1":
         rec_ini_percep = lines[iDataOffset].rstrip()
@@ -256,15 +257,18 @@ def get_ME_RPS(hnd_dat, tr0, tr1):
 
 def write_hnd_dat(hnd_dat, data_dir, fn):
     #global simulation_data_dir, data_dir
-    fp = open("%(dd)s/rpsm_%(fn)s.dat" % {"dd" : data_dir, "fn" : fn}, "w")
+    fp = open("%(dd)s/%(fn)s.dat" % {"dd" : data_dir, "fn" : fn}, "w")
     fp.write("#  player hands, AI hands, mv times, inp method, ini_weight, fin_weights, paced_or_free, AI_or_RNG\n")
     fp.write("Notzilla/5.0\n")
     fp.write("01Jan01-0000-00\n")
     fp.write("01Jan01-0000-01\n")
     fp.write("Perceptron(2)\n")    
     dat_strng = str(hnd_dat[:, 0]).replace("\n", "")
+    dat_strng = dat_strng.replace("1", "R").replace("2", "S").replace("3", "P")
+    #  goo choki paa
     fp.write("%s\n" % dat_strng[1:-1])
     dat_strng = str(hnd_dat[:, 1]).replace("\n", "")
+    dat_strng = dat_strng.replace("1", "R").replace("2", "S").replace("3", "P")
     fp.write("%s\n" % dat_strng[1:-1])
     dat_strng = "0 " * hnd_dat.shape[0]
     fp.write("%s\n" % dat_strng)
@@ -708,25 +712,29 @@ def repeated_keys(hnd_dat):
     """
     return me 
     """
-    longest_repeats = []
-    i = 0
-    L = hnd_dat.shape[0]
-    while i < L-1:
-        if hnd_dat[i, 0] == hnd_dat[i+1, 0]:  #  Found a repeat
-            j = i
-            keep_going = True
-            while (j < L-1) and keep_going:
-                if hnd_dat[j, 0] != hnd_dat[j+1, 0]:
-                    longest_repeats.append(j - i+1)
-                    keep_going = False
-                j += 1
-            if keep_going:  #  hit end of loop while a repeat
-                longest_repeats.append(j - i+1)                
-            i = j-1  #  j+1 is not equal
-        else:     #  Not a repeat
-            longest_repeats.append(1)
-        i += 1
-    if hnd_dat[L-2, 0] != hnd_dat[L-1, 0]:   #  last 2 are not repeats
-        longest_repeats.append(1)
+    return misc.repeated_array_entry(hnd_dat[:, 0])
 
-    return longest_repeats
+
+    # longest_repeats = []
+    # i = 0
+    # L = hnd_dat.shape[0]
+    # while i < L-1:
+    #     if hnd_dat[i, 0] == hnd_dat[i+1, 0]:  #  Found a repeat
+    #         j = i
+    #         keep_going = True
+    #         while (j < L-1) and keep_going:
+    #             if hnd_dat[j, 0] != hnd_dat[j+1, 0]:
+    #                 longest_repeats.append(j - i+1)
+    #                 keep_going = False
+    #             j += 1
+    #         if keep_going:  #  hit end of loop while a repeat
+    #             longest_repeats.append(j - i+1)                
+    #         i = j-1  #  j+1 is not equal
+    #     else:     #  Not a repeat
+    #         longest_repeats.append(1)
+    #     i += 1
+    # if hnd_dat[L-2, 0] != hnd_dat[L-1, 0]:   #  last 2 are not repeats
+    #     longest_repeats.append(1)
+
+    # return longest_repeats
+
