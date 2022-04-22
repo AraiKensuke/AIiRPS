@@ -47,7 +47,7 @@ def return_hnd_dat(day_time, tr0=0, tr1=None, know_gt=False, flip_human_AI=False
         s = "%(lid)s/%(v)d/*.dat" % {"lid" : look_in_dir, "v" : visit}
     if know_gt:
         import pickle
-        with open("%s/block1_AI.dmp" % look_in_dir, "rb") as f:
+        with open("%(lid)s/%(v)d/block1_AI.dmp" % {"lid" : look_in_dir, "v" : visit}, "rb") as f:
             gt_dmp = pickle.load(f)
 
     dat_files = glob.glob(s)
