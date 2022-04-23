@@ -73,7 +73,7 @@ def return_hnd_dat(day_time, tr0=0, tr1=None, know_gt=False, flip_human_AI=False
         return None, None, None, None, None, None, None, None
 
     #print("----")
-    #print('%(bd)s/%(day)s/%(partID)s/%(rpsmfn)s' % {"day" : day, "partID" : day_time, "bd" : baseDir, "rpsmfn" : rpsm_fn})
+    print('......   open this one     %(bd)s/%(day)s/%(partID)s/%(rpsmfn)s' % {"day" : day, "partID" : day_time, "bd" : baseDir, "rpsmfn" : rpsm_fn})
     
     with open('%(bd)s/%(day)s/%(partID)s/%(rpsmfn)s' % {"day" : day, "partID" : day_time, "bd" : baseDir, "rpsmfn" : rpsm_fn}) as f:
         lines = f.read().splitlines()
