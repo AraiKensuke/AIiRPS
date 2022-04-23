@@ -36,7 +36,7 @@ def return_hnd_dat(day_time, tr0=0, tr1=None, know_gt=False, flip_human_AI=False
     starttime and endtime needed because filename date is when userID was crafted, but not the time RPS game was started.
     """
     data_dir = "%(dd)s/%(ex)s" % {"dd" : _data_dir, "ex" : expt}
-    baseDir = data_dir if not know_gt else _simulation_data_dir
+    baseDir = data_dir# if not know_gt else _simulation_data_dir
     day = day_time[0:8]
 
     look_in_dir = "%(dd)s/%(dy)s/%(dt)s" % {"dd" : data_dir, "dt" : day_time, "dy" : day}
