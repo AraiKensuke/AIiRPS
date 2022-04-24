@@ -1,6 +1,7 @@
 import AIiRPS.utils.read_taisen as _rt
 import numpy as _N
-from filter import gauKer
+import AIiRPS.utils.misc as _Am
+#from filter import gauKer
 import AIiRPS.constants as _AIconst
 
 dn_win = 0
@@ -521,7 +522,7 @@ def kernel_NGS(dat, SHUF=0, kerwin=3):
 
     stay_win, dn_win, up_win, stay_tie, dn_tie, up_tie, stay_los, dn_los, up_los, win_cond, tie_cond, los_cond  = _rt.get_ME_WTL(_td, 0, Tgame)
 
-    gk = gauKer(kerwin)
+    gk = _Am.gauKer(kerwin)
     gk /= _N.sum(gk)
     all_cnd_tr = _N.zeros((3, 3, Tgame-1))
     ker_all_cnd_tr = _N.ones((3, 3, Tgame-1))*-100
