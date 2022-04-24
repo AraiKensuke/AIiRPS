@@ -32,6 +32,7 @@ def empirical_NGS_concat_conds(dat, SHUF=0, win=20, flip_human_AI=False, expt="E
     _td, start_tm, end_tm, UA, cnstr, inp_meth, ini_percep, fin_percep = _rt.return_hnd_dat(dat, has_useragent=True, has_start_and_end_times=True, has_constructor=True, flip_human_AI=flip_human_AI, expt=expt, visit=visit)
     cWin = win
     if _td is None:
+        print("_td is None")
         return None, None
     Tgame= _td.shape[0]
     ############  Several different dynamic conditional probabilities
@@ -43,16 +44,26 @@ def empirical_NGS_concat_conds(dat, SHUF=0, win=20, flip_human_AI=False, expt="E
     cprobsDSU_WTL     = _N.ones((SHUF+1, 9, Tgame-win))*-1    # UDS | WTL
     cprobsRPS_WTL     = _N.ones((SHUF+1, 9, Tgame-win))*-1 # RPS | WTL
     cprobsDSU_RPS     = _N.ones((SHUF+1, 9, Tgame-win))*-1 # UDS | RPS
+    cprobsDSU_AIRPS     = _N.ones((SHUF+1, 9, Tgame-win))*-1 # UDS | RPS
     cprobsSTSW        = _N.ones((SHUF+1, 6, Tgame-win))*-1    #  Stay,Switch | WTL
-    pConds            = [cprobsDSU_WTL, cprobsRPS_WTL, cprobsDSU_RPS, cprobsSTSW]
+    pConds            = [cprobsDSU_WTL, cprobsRPS_WTL, cprobsDSU_RPS, cprobsDSU_AIRPS, cprobsSTSW]
 
     ############  Raw move game-by-game data
     all_tds = _N.empty((SHUF+1, _td.shape[0], _td.shape[1]), dtype=_N.int)
+    mCRs0 = marginalCR(_td)
+    
     for shf in range(SHUF+1):    ###########  allow randomly shuffling the data
         if shf > 0:
+            #OK = False
+            #while not OK:
             inds = _N.arange(_td.shape[0])
             _N.random.shuffle(inds)
             td = _N.array(_td[inds])
+            #    mCRs = marginalCR(td)
+            #probdiff = _N.abs(mCRs0 - mCRs)
+            #    if len(_N.where(probdiff > 0.2)[0]) < 2:
+            #        print("found")
+            #        OK = True
         else:
             td = _td
         all_tds[shf] = td
@@ -65,26 +76,45 @@ def empirical_NGS_concat_conds(dat, SHUF=0, win=20, flip_human_AI=False, expt="E
         R_m1 = _N.where(td[0:Tgame-1, 0] == 1)[0]
         S_m1 = _N.where(td[0:Tgame-1, 0] == 2)[0]
         P_m1 = _N.where(td[0:Tgame-1, 0] == 3)[0]
+        ################################# rps 1 steps back
+        AI_R_m1 = _N.where(td[0:Tgame-1, 1] == 1)[0]
+        AI_S_m1 = _N.where(td[0:Tgame-1, 1] == 2)[0]
+        AI_P_m1 = _N.where(td[0:Tgame-1, 1] == 3)[0]
 
         icndT = -1
-        for conds in [[wins_m1, ties_m1, loss_m1], [wins_m1, ties_m1, loss_m1], [R_m1, S_m1, P_m1], [wins_m1, ties_m1, loss_m1]]:
+        for conds in [[wins_m1, ties_m1, loss_m1], [wins_m1, ties_m1, loss_m1], [R_m1, S_m1, P_m1], [AI_R_m1, AI_S_m1, AI_P_m1], [wins_m1, ties_m1, loss_m1]]:
             icndT += 1
+            #print("%(wm)d %(tm)d %(lm)d" % {"wm" : wins_m1[-1], "tm" : ties_m1[-1], "lm" : loss_m1[-1]})
             pCond = pConds[icndT]
             icnd = -1
             for cond_m1 in conds:
                 icnd += 1
-                if (icndT == 0) or (icndT == 2):  #  DSU | WTL or DSU | RPS
+                if (icndT == 0) or (icndT == 2) or (icndT == 3):  #  DSU | WTL or DSU | RPS or DSU | AI_RPS
                     for ig in range(len(cond_m1) - cWin):
                         tMid = (cond_m1[ig] + cond_m1[ig+cWin-1])//2
+                        if tMid == Tgame-cWin:
+                            print("!!!!!!   PROBLEM")
+                            tMid -= 1
                         #  stays
-                        n_stays = len(_N.where(td[cond_m1[ig:ig+cWin], 0] == td[cond_m1[ig:ig+cWin]+1, 0])[0])
-                                #####UPGRAD        
-                        n_dngrd = len(_N.where(((td[cond_m1[ig:ig+cWin], 0] == 1) & (td[cond_m1[ig:ig+cWin]+1, 0] == 2)) |
-                                               ((td[cond_m1[ig:ig+cWin], 0] == 2) & (td[cond_m1[ig:ig+cWin]+1, 0] == 3)) |
-                                               ((td[cond_m1[ig:ig+cWin], 0] == 3) & (td[cond_m1[ig:ig+cWin]+1, 0] == 1)))[0])
-                        n_upgrd = len(_N.where(((td[cond_m1[ig:ig+cWin], 0] == 1) & (td[cond_m1[ig:ig+cWin]+1, 0] == 3)) |
-                                               ((td[cond_m1[ig:ig+cWin], 0] == 2) & (td[cond_m1[ig:ig+cWin]+1, 0] == 1)) |
-                                               ((td[cond_m1[ig:ig+cWin], 0] == 3) & (td[cond_m1[ig:ig+cWin]+1, 0] == 2)))[0])
+                        if (icndT == 0) or (icndT == 2):
+                            n_stays = len(_N.where(td[cond_m1[ig:ig+cWin], 0] == td[cond_m1[ig:ig+cWin]+1, 0])[0])
+                            #####UPGRAD        
+                            n_dngrd = len(_N.where(((td[cond_m1[ig:ig+cWin], 0] == 1) & (td[cond_m1[ig:ig+cWin]+1, 0] == 2)) |
+                                                   ((td[cond_m1[ig:ig+cWin], 0] == 2) & (td[cond_m1[ig:ig+cWin]+1, 0] == 3)) |
+                                                   ((td[cond_m1[ig:ig+cWin], 0] == 3) & (td[cond_m1[ig:ig+cWin]+1, 0] == 1)))[0])
+                            n_upgrd = len(_N.where(((td[cond_m1[ig:ig+cWin], 0] == 1) & (td[cond_m1[ig:ig+cWin]+1, 0] == 3)) |
+                                                   ((td[cond_m1[ig:ig+cWin], 0] == 2) & (td[cond_m1[ig:ig+cWin]+1, 0] == 1)) |
+                                                   ((td[cond_m1[ig:ig+cWin], 0] == 3) & (td[cond_m1[ig:ig+cWin]+1, 0] == 2)))[0])
+                        else:
+                            n_stays = len(_N.where(td[cond_m1[ig:ig+cWin], 1] == td[cond_m1[ig:ig+cWin]+1, 0])[0])
+                            #####UPGRAD        
+                            n_dngrd = len(_N.where(((td[cond_m1[ig:ig+cWin], 1] == 1) & (td[cond_m1[ig:ig+cWin]+1, 0] == 2)) |
+                                                   ((td[cond_m1[ig:ig+cWin], 1] == 2) & (td[cond_m1[ig:ig+cWin]+1, 0] == 3)) |
+                                                   ((td[cond_m1[ig:ig+cWin], 1] == 3) & (td[cond_m1[ig:ig+cWin]+1, 0] == 1)))[0])
+                            n_upgrd = len(_N.where(((td[cond_m1[ig:ig+cWin], 1] == 1) & (td[cond_m1[ig:ig+cWin]+1, 0] == 3)) |
+                                                   ((td[cond_m1[ig:ig+cWin], 1] == 2) & (td[cond_m1[ig:ig+cWin]+1, 0] == 1)) |
+                                                   ((td[cond_m1[ig:ig+cWin], 1] == 3) & (td[cond_m1[ig:ig+cWin]+1, 0] == 2)))[0])
+                                
                         #  DN | cond
                         ##  This probability is at t in middle of window
                         pCond[shf, icnd*3, tMid]      = n_dngrd / cWin
@@ -93,6 +123,9 @@ def empirical_NGS_concat_conds(dat, SHUF=0, win=20, flip_human_AI=False, expt="E
                 elif icndT == 1:  #  RSP | WTL
                     for ig in range(len(cond_m1) - cWin):
                         tMid = (cond_m1[ig] + cond_m1[ig+cWin-1])//2
+                        if tMid == Tgame-cWin:
+                            print("!!!!!!   PROBLEM")
+                            tMid -= 1
                         #####R        
                         n_R = len(_N.where((td[cond_m1[ig:ig+cWin]+1, 0] == 1))[0])
                         n_S = len(_N.where((td[cond_m1[ig:ig+cWin]+1, 0] == 2))[0])
@@ -100,9 +133,13 @@ def empirical_NGS_concat_conds(dat, SHUF=0, win=20, flip_human_AI=False, expt="E
                         pCond[shf, icnd*3, tMid]      = n_R / cWin
                         pCond[shf, icnd*3+1, tMid]  = n_S / cWin
                         pCond[shf, icnd*3+2, tMid]  = n_P / cWin
-                elif (icndT == 3):  #  ST,SW | WTL
+                elif (icndT == 4):  #  ST,SW | WTL
                     for ig in range(len(cond_m1) - cWin):
                         tMid = (cond_m1[ig] + cond_m1[ig+cWin-1])//2
+                        if tMid == Tgame-cWin:
+                            print("!!!!!!   PROBLEM")
+                            tMid -= 1
+                        
                         #  stays
                         n_stays     = len(_N.where(td[cond_m1[ig:ig+cWin], 0] == td[cond_m1[ig:ig+cWin]+1, 0])[0])
                         n_switch    = len(_N.where(td[cond_m1[ig:ig+cWin], 0] != td[cond_m1[ig:ig+cWin]+1, 0])[0])                        
@@ -111,8 +148,12 @@ def empirical_NGS_concat_conds(dat, SHUF=0, win=20, flip_human_AI=False, expt="E
                         pCond[shf, icnd*2+1, tMid]  = n_switch / cWin
 
                 ###############################################
+                ###############################################
                 #  go back, fill in the -1s
-                if icndT != 3:
+                ###############################################
+                ###############################################
+
+                if icndT != 4:
                     definedTs = _N.where(pCond[shf, icnd*3] != -1)[0]
                     definedTs_last = _N.array(definedTs.tolist() + [Tgame-win])
 
@@ -126,7 +167,7 @@ def empirical_NGS_concat_conds(dat, SHUF=0, win=20, flip_human_AI=False, expt="E
                         pCond[shf, icnd*3+1, definedTs_last[itd]+1:definedTs_last[itd+1]] = pCond[shf, icnd*3+1, definedTs_last[itd]]
                         pCond[shf, icnd*3+2, definedTs_last[itd]+1:definedTs_last[itd+1]] = pCond[shf, icnd*3+2, definedTs_last[itd]]
                         #print(pCond[shf, icnd*3])
-                elif icndT == 3:
+                elif icndT == 4:
                     definedTs = _N.where(pCond[shf, icnd*2] != -1)[0]
                     definedTs_last = _N.array(definedTs.tolist() + [Tgame-win])
 
@@ -142,7 +183,7 @@ def empirical_NGS_concat_conds(dat, SHUF=0, win=20, flip_human_AI=False, expt="E
 
                         # for conds in [[wins_m1, ties_m1, loss_m1], [wins_m1, ties_m1, loss_m1], [R_m1, S_m1, P_m1], [wins_m1, ties_m1, loss_m1]]:                        
                         
-    return cprobsDSU_WTL, cprobsRPS_WTL, cprobsDSU_RPS, cprobsSTSW, all_tds, Tgame
+    return cprobsDSU_WTL, cprobsRPS_WTL, cprobsDSU_RPS, cprobsDSU_AIRPS, all_tds, Tgame
 
 
 def empirical_NGS(dat, SHUF=0, win=20, flip_human_AI=False, expt="EEG1", visit=None, dither_unobserved=False):
