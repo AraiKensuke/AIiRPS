@@ -14,7 +14,7 @@ dn_los = 6
 st_los = 7
 up_los = 8
 
-def empirical_NGS_concat_conds(dat, SHUF=0, win=20, flip_human_AI=False, expt="EEG1", visit=None):
+def empirical_NGS_concat_conds(dat, SHUF=0, win=20, flip_human_AI=False, expt="EEG1", visit=None, know_gt=False):
     """
     concatenate given
     1  2  3  4  5  6  7  8  9  10 11 12
@@ -30,7 +30,7 @@ def empirical_NGS_concat_conds(dat, SHUF=0, win=20, flip_human_AI=False, expt="E
     4 moves at a time
     DW UT ST UL
     """
-    _td, start_tm, end_tm, UA, cnstr, inp_meth, ini_percep, fin_percep = _rt.return_hnd_dat(dat, has_useragent=True, has_start_and_end_times=True, has_constructor=True, flip_human_AI=flip_human_AI, expt=expt, visit=visit)
+    _td, start_tm, end_tm, UA, cnstr, inp_meth, ini_percep, fin_percep, lmGT = _rt.return_hnd_dat(dat, has_useragent=True, has_start_and_end_times=True, has_constructor=True, flip_human_AI=flip_human_AI, expt=expt, visit=visit, know_gt=know_gt)
     cWin = win
     if _td is None:
         print("_td is None")
