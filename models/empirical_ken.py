@@ -50,7 +50,7 @@ def empirical_NGS_concat_conds(dat, SHUF=0, win=20, flip_human_AI=False, expt="E
     pConds            = [cprobsDSU_WTL, cprobsRPS_WTL, cprobsDSU_RPS, cprobsDSU_AIRPS, cprobsSTSW]
 
     ############  Raw move game-by-game data
-    all_tds = _N.empty((SHUF+1, _td.shape[0], _td.shape[1]), dtype=_N.int)
+    all_tds = _N.empty((SHUF+1, _td.shape[0], _td.shape[1]), dtype=int)
     mCRs0 = marginalCR(_td)
     
     for shf in range(SHUF+1):    ###########  allow randomly shuffling the data
@@ -204,7 +204,7 @@ def empirical_NGS(dat, SHUF=0, win=20, flip_human_AI=False, expt="EEG1", visit=N
     cprobsSTSW = _N.zeros((SHUF+1, 6, Tgame-win))    #  Stay,Switch | WTL
 
     ############  Raw move game-by-game data
-    all_tds = _N.empty((SHUF+1, _td.shape[0], _td.shape[1]), dtype=_N.int)
+    all_tds = _N.empty((SHUF+1, _td.shape[0], _td.shape[1]), dtype=int)
     for shf in range(SHUF+1):    ###########  allow randomly shuffling the data
         if shf > 0:
             inds = _N.arange(_td.shape[0])
@@ -214,10 +214,10 @@ def empirical_NGS(dat, SHUF=0, win=20, flip_human_AI=False, expt="EEG1", visit=N
             td = _td
         all_tds[shf] = td
 
-        scores_wtl1 = _N.zeros(Tgame-1, dtype=_N.int)
-        scores_rps0 = _N.zeros(Tgame-1, dtype=_N.int)
-        scores_rps1 = _N.zeros(Tgame-1, dtype=_N.int)                
-        scores_tr10 = _N.zeros(Tgame-1, dtype=_N.int)   #  transition
+        scores_wtl1 = _N.zeros(Tgame-1, dtype=int)
+        scores_rps0 = _N.zeros(Tgame-1, dtype=int)
+        scores_rps1 = _N.zeros(Tgame-1, dtype=int)                
+        scores_tr10 = _N.zeros(Tgame-1, dtype=int)   #  transition
 
         ################################# wtl 1 steps back
         wins_m1 = _N.where(td[0:Tgame-1, 2] == 1)[0]
@@ -466,7 +466,7 @@ def CRs(dat, expt="EEG1", visit=None, block=1, hnd_dat=None):
     else:
         td = hnd_dat
     Tgame= td.shape[0]
-    CRs = _N.ones(Tgame-1, dtype=_N.int) * -1
+    CRs = _N.ones(Tgame-1, dtype=int) * -1
 
     for g in range(Tgame-1):
         if td[g, 0] == td[g+1, 0]:   #  STAY
